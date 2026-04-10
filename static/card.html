@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hashcards</title>
+<link rel="stylesheet" href="/static/katex/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script defer src="/static/katex/katex.min.js"></script>
+<script defer src="/static/katex/contrib/mhchem.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="/static/style.css">
+<noscript><style>.card-content { opacity: 1; }</style></noscript>
+</head>
+<body>
+<div class="root">
+  <div class="header">
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: {{.ProgressPct}}%;"></div>
+    </div>
+  </div>
+  <div class="card-container">
+    <div class="card">
+      <div class="card-header"><h1>{{.DeckName}}</h1></div>
+      <div class="card-content">
+        {{if .Revealed}}
+          {{.Back}}
+        {{else}}
+          {{.Front}}
+        {{end}}
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <form action="/" method="post">
+      {{if .CanUndo}}
+        <input id="undo" type="submit" name="action" value="Undo" title="Undo last action. Shortcut: u.">
+      {{else}}
+        <input id="undo" type="submit" name="action" value="Undo" disabled>
+      {{end}}
+      <div class="spacer"></div>
+      {{if .Revealed}}
+        <div class="grades">
+          <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
+          <input id="hard"   type="submit" name="action" value="Hard"   title="Mark card as difficult. Shortcut: 2.">
+          <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
+          <input id="easy"   type="submit" name="action" value="Easy"   title="Mark card as very easy. Shortcut: 4.">
+        </div>
+      {{else}}
+        <input id="reveal" type="submit" name="action" value="Reveal" title="Show the answer. Shortcut: space.">
+      {{end}}
+      <div class="spacer"></div>
+      <input id="end" type="submit" name="action" value="End" title="End the session (changes are saved)">
+    </form>
+  </div>
+</div>
+<script>{{.MacrosJS}}</script>
+<script src="/static/script.js"></script>
+</body>
+</html>

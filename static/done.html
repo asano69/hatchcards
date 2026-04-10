@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hashcards</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="finished">
+  <h1>Session Completed 🎉</h1>
+  <div class="summary">Reviewed {{.Reviewed}} cards in {{.DurationSec}} seconds.</div>
+  <h2>Session Stats</h2>
+  <div class="stats">
+    <table>
+      <tr><td class="key">Total Cards</td><td class="val">{{.Total}}</td></tr>
+      <tr><td class="key">Cards Reviewed</td><td class="val">{{.Reviewed}}</td></tr>
+      <tr><td class="key">Duration (seconds)</td><td class="val">{{.DurationSec}}</td></tr>
+    </table>
+  </div>
+  <div class="shutdown-container">
+    <form action="/" method="post">
+      <input class="shutdown-button" type="submit" name="action" value="Shutdown" title="Shut down the server">
+    </form>
+  </div>
+</div>
+</body>
+</html>
