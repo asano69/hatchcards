@@ -104,15 +104,47 @@ func exportCmd() *cobra.Command {
 // orphans
 // -------------------------------------------------------------------------
 
+// orphansCmd section of main.go — replace the existing orphansCmd() function
+// with the version below, and update the import to use the rewritten package.
+
 func orphansCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "orphans <collection-root>",
-		Short: "List media files not referenced by any card",
+	cmd := &cobra.Command{
+		Use:          "orphans",
+		Short:        "Commands relating to orphan cards",
+		SilenceUsage: true,
+	}
+	cmd.AddCommand(orphansListCmd(), orphansDeleteCmd())
+	return cmd
+}
+
+func orphansListCmd() *cobra.Command {
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "list <collection-root>",
+		Short: "List the hashes of all orphan cards in the collection",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return orphans.Run(args[0], os.Stdout)
+			return orphans.List(args[0], dbPath, os.Stdout)
 		},
 	}
+	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
+		"path to the performance database")
+	return cmd
+}
+
+func orphansDeleteCmd() *cobra.Command {
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "delete <collection-root>",
+		Short: "Remove all orphan cards from the database",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return orphans.Delete(args[0], dbPath, os.Stdout)
+		},
+	}
+	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
+		"path to the performance database")
+	return cmd
 }
 
 // -------------------------------------------------------------------------
