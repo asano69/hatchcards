@@ -1,0 +1,35 @@
+{
+  "public_base_url": "http://localhost:3001",
+  "listen": ":3000",
+  "pwa_dir": "/app/pwa",
+  "style": {
+    "dark_brightness": 0.75,
+    "mobile_root_size": "100%",
+    "mobile_h1_size": "1.6rem",
+    "mobile_p_size": "1.2rem"
+  },
+  "startup_timeout_sec": 10,
+  "routes": [
+    {
+      "path": "/",
+      "command": "hashcards drill --host=0.0.0.0 --port={port} --open-browser=false"
+    },
+    {
+      "path": "/math",
+      "command": "hashcards drill --host=0.0.0.0 --port={port} --open-browser=false --from-deck=Mathematics"
+    },
+    {
+      "path": "/art",
+      "command": "hashcards drill --host=0.0.0.0 --port={port} --open-browser=false --from-deck=Art"
+    },
+    {
+      "path": "/audio",
+      "command": "hashcards drill --host=0.0.0.0 --port={port} --open-browser=false --from-deck=Audio"
+    },
+    {
+      "path": "/menu",
+      "command": "/app/menu.sh 8001",
+      "port": 8001
+    }
+  ]
+}

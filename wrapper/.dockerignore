@@ -1,0 +1,8 @@
+*
+!HASHCARDS_VERSION
+
+!go.mod
+!go.sum
+!main.go
+!pwa/
+!entrypoint.sh
