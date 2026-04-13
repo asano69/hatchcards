@@ -137,3 +137,7 @@ Options:
   -h, --help             Print help
 ```
 
+## hashcards -V
+```
+hashcards 0.3.0
+```
