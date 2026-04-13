@@ -1,1 +1,4 @@
+rustのhashcardsからgoのポートをつくることが目的です。オリジナルのrustプロジェクトはrust-hashcardsにあります。goポート側には*_test.goが存在しないので、rustのtestコードを確認して仕様を理解してください。
+
+wrapperは、オリジナルのrust-hashcardsにはない部分です。rust-hashcardsからの移行が終了次第、このwrapperをgo-hashcardsに統合します。
 
