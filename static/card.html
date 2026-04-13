@@ -41,10 +41,15 @@
       <div class="spacer"></div>
       {{if .Revealed}}
         <div class="grades">
-          <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
-          <input id="hard"   type="submit" name="action" value="Hard"   title="Mark card as difficult. Shortcut: 2.">
-          <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
-          <input id="easy"   type="submit" name="action" value="Easy"   title="Mark card as very easy. Shortcut: 4.">
+          {{if eq .AnswerControls "binary"}}
+            <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
+            <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
+          {{else}}
+            <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
+            <input id="hard"   type="submit" name="action" value="Hard"   title="Mark card as difficult. Shortcut: 2.">
+            <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
+            <input id="easy"   type="submit" name="action" value="Easy"   title="Mark card as very easy. Shortcut: 4.">
+          {{end}}
         </div>
       {{else}}
         <input id="reveal" type="submit" name="action" value="Reveal" title="Show the answer. Shortcut: space.">

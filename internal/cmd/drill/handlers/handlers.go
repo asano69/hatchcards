@@ -53,6 +53,7 @@ var mimeTypes = map[string]string{
 // Register attaches all drill routes to r.
 //   - staticDir: directory containing style.css, script.js, card.html, done.html, katex/
 //   - collectionRoot: root directory of the card collection (for /file/ serving)
+//   - answerControls: "full" (4 buttons) or "binary" (2 buttons)
 func Register(
 	r *mux.Router,
 	mu *sync.Mutex,
@@ -62,6 +63,7 @@ func Register(
 	done chan<- struct{},
 	staticDir string,
 	collectionRoot string,
+	answerControls string,
 ) {
 	macros := loadMacros(filepath.Join(collectionRoot, "macros.tex"))
 
@@ -74,6 +76,7 @@ func Register(
 		staticDir:      staticDir,
 		collectionRoot: collectionRoot,
 		macros:         macros,
+		answerControls: answerControls,
 	}
 
 	r.HandleFunc("/", h.getRoot).Methods(http.MethodGet)
@@ -84,15 +87,12 @@ func Register(
 
 	// Serve KaTeX assets at /katex/ so that the absolute font paths baked into
 	// katex.min.css (e.g. /katex/fonts/KaTeX_Main-Regular.woff2) resolve correctly.
-	// The static file server at /static/ cannot satisfy these requests because the
-	// CSS uses /katex/ as the base, not /static/katex/.
 	katexFS := http.FileServer(http.Dir(filepath.Join(staticDir, "katex")))
 	r.PathPrefix("/katex/").Handler(http.StripPrefix("/katex/", katexFS))
 
 	// Serve remaining static assets (CSS, JS, templates).
 	staticFS := http.FileServer(http.Dir(staticDir))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", staticFS))
-
 }
 
 // loadMacros reads a macros.tex file and returns (name, definition) pairs,
@@ -136,6 +136,8 @@ type handler struct {
 	staticDir      string
 	collectionRoot string
 	macros         [][2]string
+	// answerControls is "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good).
+	answerControls string
 }
 
 // -------------------------------------------------------------------------
@@ -323,15 +325,16 @@ func (h *handler) renderCard(w http.ResponseWriter) {
 	}
 
 	data := cardData{
-		DeckName:    dc.Card.DeckName(),
-		Front:       template.HTML(entry.Front),
-		Back:        template.HTML(entry.Back),
-		Revealed:    h.sess.Revealed,
-		CanUndo:     len(h.sess.Done) > 0,
-		Done:        done,
-		Total:       total,
-		ProgressPct: percent,
-		MacrosJS:    h.macrosJS(),
+		DeckName:       dc.Card.DeckName(),
+		Front:          template.HTML(entry.Front),
+		Back:           template.HTML(entry.Back),
+		Revealed:       h.sess.Revealed,
+		CanUndo:        len(h.sess.Done) > 0,
+		Done:           done,
+		Total:          total,
+		ProgressPct:    percent,
+		MacrosJS:       h.macrosJS(),
+		AnswerControls: h.answerControls,
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(h.staticDir, "card.html"))
@@ -381,6 +384,8 @@ type cardData struct {
 	Total       int
 	ProgressPct int
 	MacrosJS    template.JS
+	// AnswerControls is "full" or "binary", consumed by the card template.
+	AnswerControls string
 }
 
 type doneData struct {

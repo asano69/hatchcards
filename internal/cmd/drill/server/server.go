@@ -22,6 +22,16 @@ import (
 	"github.com/asano69/hashcards/internal/types"
 )
 
+// AnswerControls specifies which grade buttons are shown during a drill session.
+type AnswerControls string
+
+const (
+	// AnswerControlsFull shows all four buttons: Forgot / Hard / Good / Easy.
+	AnswerControlsFull AnswerControls = "full"
+	// AnswerControlsBinary shows only two buttons: Forgot / Good.
+	AnswerControlsBinary AnswerControls = "binary"
+)
+
 // Config holds the parameters needed to start the drill server.
 type Config struct {
 	// Root is the collection root directory.
@@ -36,6 +46,17 @@ type Config struct {
 	StaticDir string
 	// Out receives informational messages (e.g. "Listening on :8080").
 	Out io.Writer
+
+	// CardLimit, when non-nil, caps the total number of cards in the session.
+	CardLimit *int
+	// NewCardLimit, when non-nil, caps the number of new (never reviewed) cards.
+	NewCardLimit *int
+	// DeckFilter, when non-nil, restricts the session to cards from the named deck.
+	DeckFilter *string
+	// AnswerControls selects which grade buttons are shown. Defaults to full.
+	AnswerControls AnswerControls
+	// BurySiblings removes all but the first sibling cloze card from the queue.
+	BurySiblings bool
 }
 
 // Run starts the drill server and blocks until the session is complete or the
@@ -57,9 +78,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// Bury sibling cloze cards (same text, different deletion) to avoid
-	// showing all deletions in the same session.
-	due = burySiblings(due)
+	due = filterDeck(due, cfg)
+
+	if cfg.BurySiblings {
+		due = burySiblings(due)
+	}
 
 	if len(due) == 0 {
 		fmt.Fprintln(cfg.Out, "No cards due today.")
@@ -76,8 +99,14 @@ func Run(ctx context.Context, cfg Config) error {
 	// done is closed by the POST handler when the last card is reviewed.
 	done := make(chan struct{})
 
+	// Default to full answer controls when not specified.
+	ac := cfg.AnswerControls
+	if ac == "" {
+		ac = AnswerControlsFull
+	}
+
 	router := mux.NewRouter()
-	handlers.Register(router, &mu, sess, htmlCache, database, done, cfg.StaticDir, cfg.Root)
+	handlers.Register(router, &mu, sess, htmlCache, database, done, cfg.StaticDir, cfg.Root, string(ac))
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	srv := &http.Server{Addr: addr, Handler: router}
@@ -95,8 +124,7 @@ func Run(ctx context.Context, cfg Config) error {
 		serveErr <- srv.Serve(ln)
 	}()
 
-	// Wait for the session to finish, the context to be cancelled, or a
-	// serve error.
+	// Wait for the session to finish, the context to be cancelled, or a serve error.
 	select {
 	case <-done:
 		fmt.Fprintln(cfg.Out, "Session complete.")
@@ -115,8 +143,47 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-// burySiblings removes all but the first cloze card sharing the same family hash.
-// This matches the Rust implementation's bury_siblings() in server.rs.
+// filterDeck applies card-limit, new-card-limit, and deck-filter from cfg,
+// matching the Rust filter_deck() function in server.rs.
+func filterDeck(due []collection.DueCard, cfg Config) []collection.DueCard {
+	// Apply deck filter.
+	if cfg.DeckFilter != nil {
+		filtered := due[:0]
+		for _, dc := range due {
+			if dc.Card.DeckName() == *cfg.DeckFilter {
+				filtered = append(filtered, dc)
+			}
+		}
+		due = filtered
+	}
+
+	// Apply total card limit.
+	if cfg.CardLimit != nil && len(due) > *cfg.CardLimit {
+		due = due[:*cfg.CardLimit]
+	}
+
+	// Apply new card limit.
+	if cfg.NewCardLimit != nil {
+		limit := *cfg.NewCardLimit
+		var result []collection.DueCard
+		newCount := 0
+		for _, dc := range due {
+			if dc.Performance.IsNew() {
+				if newCount >= limit {
+					continue
+				}
+				newCount++
+			}
+			result = append(result, dc)
+		}
+		due = result
+	}
+
+	return due
+}
+
+// burySiblings removes all but the first cloze card sharing the same family
+// hash. This matches the Rust implementation's bury_siblings() in server.rs.
 func burySiblings(due []collection.DueCard) []collection.DueCard {
 	seen := make(map[types.CardHash]struct{})
 	result := make([]collection.DueCard, 0, len(due))

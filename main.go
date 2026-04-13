@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/asano69/hashcards/internal/cmd/check"
-
 	"github.com/asano69/hashcards/internal/cmd/drill/server"
 	"github.com/asano69/hashcards/internal/cmd/export"
 	"github.com/asano69/hashcards/internal/cmd/orphans"
@@ -55,7 +54,6 @@ func checkCmd() *cobra.Command {
 				return err
 			}
 			if !result.OK() {
-				// Errors were already printed by check.Run.
 				return fmt.Errorf("%d error(s) found", len(result.Errors))
 			}
 			fmt.Fprintf(os.Stdout, "OK: %d card(s) checked.\n", result.CardCount)
@@ -123,10 +121,15 @@ func orphansCmd() *cobra.Command {
 
 func drillCmd() *cobra.Command {
 	var (
-		dbPath    string
-		port      int
-		seed      uint64
-		staticDir string
+		dbPath       string
+		port         int
+		seed         uint64
+		staticDir    string
+		cardLimit    int
+		newCardLimit int
+		fromDeck     string
+		answerCtls   string
+		burySiblings bool
 	)
 	cmd := &cobra.Command{
 		Use:   "drill <collection-root>",
@@ -138,19 +141,33 @@ func drillCmd() *cobra.Command {
 			if !cmd.Flags().Changed("seed") {
 				seed = uint64(time.Now().UnixNano())
 			}
-			// Default staticDir: "static" relative to the executable's
-			// working directory.
 			if staticDir == "" {
 				staticDir = defaultStaticDir()
 			}
+
 			cfg := server.Config{
-				Root:      args[0],
-				DBPath:    dbPath,
-				Port:      port,
-				Seed:      seed,
-				StaticDir: staticDir,
-				Out:       os.Stdout,
+				Root:           args[0],
+				DBPath:         dbPath,
+				Port:           port,
+				Seed:           seed,
+				StaticDir:      staticDir,
+				Out:            os.Stdout,
+				AnswerControls: server.AnswerControls(answerCtls),
+				BurySiblings:   burySiblings,
 			}
+
+			// Only set pointer-based limits when the flag was explicitly provided,
+			// so that omitting them means "no limit" rather than "limit=0".
+			if cmd.Flags().Changed("card-limit") {
+				cfg.CardLimit = &cardLimit
+			}
+			if cmd.Flags().Changed("new-card-limit") {
+				cfg.NewCardLimit = &newCardLimit
+			}
+			if cmd.Flags().Changed("from-deck") {
+				cfg.DeckFilter = &fromDeck
+			}
+
 			return server.Run(context.Background(), cfg)
 		},
 	}
@@ -162,6 +179,16 @@ func drillCmd() *cobra.Command {
 		"PRNG seed for card shuffle (default: current time)")
 	cmd.Flags().StringVar(&staticDir, "static", "",
 		"path to the static assets directory (default: ./static)")
+	cmd.Flags().IntVar(&cardLimit, "card-limit", 0,
+		"Maximum number of cards to drill in a session (default: all due today)")
+	cmd.Flags().IntVar(&newCardLimit, "new-card-limit", 0,
+		"Maximum number of new cards to drill in a session")
+	cmd.Flags().StringVar(&fromDeck, "from-deck", "",
+		"Only drill cards from this deck")
+	cmd.Flags().StringVar(&answerCtls, "answer-controls", "full",
+		"Answer controls to show: full (Forgot/Hard/Good/Easy) or binary (Forgot/Good)")
+	cmd.Flags().BoolVar(&burySiblings, "bury-siblings", true,
+		"Bury sibling cloze cards within a session (default: true)")
 	return cmd
 }
 
@@ -169,7 +196,6 @@ func drillCmd() *cobra.Command {
 // working directory. This works correctly for both "go run ." and compiled
 // binaries run from the project root.
 func defaultStaticDir() string {
-	// Try to find the executable's location for compiled binaries.
 	exe, err := os.Executable()
 	if err == nil {
 		candidate := filepath.Join(filepath.Dir(exe), "static")
@@ -177,6 +203,5 @@ func defaultStaticDir() string {
 			return candidate
 		}
 	}
-	// Fall back to "static" relative to the working directory (used by go run).
 	return "static"
 }
