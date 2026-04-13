@@ -187,7 +187,17 @@ func ParseFile(path string) ([]types.Card, error) {
 	}
 	ctx.flush()
 
-	return ctx.cards, nil
+	// Deduplicate cards by hash within this file, matching Rust parser behaviour.
+	seen := make(map[types.CardHash]struct{}, len(ctx.cards))
+	unique := ctx.cards[:0]
+	for _, c := range ctx.cards {
+		if _, exists := seen[c.Hash()]; !exists {
+			seen[c.Hash()] = struct{}{}
+			unique = append(unique, c)
+		}
+	}
+	return unique, nil
+
 }
 
 func (ctx *parseContext) step(raw string) {
