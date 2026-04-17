@@ -32,7 +32,7 @@
     </div>
   </div>
   <div class="controls">
-    <form action="/" method="post">
+    <form action="{{.BasePath}}" method="post">
       {{if .CanUndo}}
         <input id="undo" type="submit" name="action" value="Undo" title="Undo last action. Shortcut: u.">
       {{else}}

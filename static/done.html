@@ -19,9 +19,12 @@
     </table>
   </div>
   <div class="shutdown-container">
-    <form action="/" method="post">
-      <input class="shutdown-button" type="submit" name="action" value="Shutdown" title="Shut down the server">
+    <form action="{{.BasePath}}" method="post" style="display:inline-block;margin-right:16px;">
+      <input class="button shutdown-button" type="submit" name="action" value="Reset" title="Start a new session for today">
     </form>
+    <a href="/" class="button home-button" style="display:inline-block;text-decoration:none;" title="Return home">
+      Return home
+    </a>
   </div>
 </div>
 </body>

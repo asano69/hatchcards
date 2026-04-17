@@ -17,18 +17,15 @@ import (
 
 // Result is the outcome of a single check run.
 type Result struct {
-	// CardCount is the total number of cards successfully parsed.
 	CardCount int
-	// Errors holds one entry per validation problem found.
-	Errors []string
+	Errors    []string
 }
 
 // OK returns true when no validation errors were found.
 func (r Result) OK() bool { return len(r.Errors) == 0 }
 
-// Run loads the collection at root (using an in-memory database so no
-// persistent state is written) and validates every card's rendered HTML and
-// every media reference it contains.
+// Run loads the collection at root and validates every card's rendered HTML
+// and every media reference it contains.
 func Run(root string, out io.Writer) (Result, error) {
 	database, err := db.Open(":memory:")
 	if err != nil {
@@ -47,13 +44,14 @@ func Run(root string, out io.Writer) (Result, error) {
 		deckFilePath := card.FilePath()
 
 		// Render both faces; errors here indicate broken Markdown.
-		if _, err := markdown.HTMLFront(card, deckFilePath); err != nil {
+		// Use "/file" as a neutral fileMountBase for validation purposes.
+		if _, err := markdown.HTMLFront(card, deckFilePath, "/file"); err != nil {
 			errors = append(errors, fmt.Sprintf(
 				"%s:%d: error rendering front: %v",
 				deckFilePath, card.LineStart(), err,
 			))
 		}
-		if _, err := markdown.HTMLBack(card, deckFilePath); err != nil {
+		if _, err := markdown.HTMLBack(card, deckFilePath, "/file"); err != nil {
 			errors = append(errors, fmt.Sprintf(
 				"%s:%d: error rendering back: %v",
 				deckFilePath, card.LineStart(), err,

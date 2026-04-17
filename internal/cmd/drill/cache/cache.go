@@ -1,10 +1,6 @@
 // Package cache pre-renders the front and back HTML for every card in a drill
 // session so the HTTP handlers can serve responses without re-running the
 // Markdown renderer on every request.
-//
-// The rendered HTML includes the wrapper divs (.question, .answer, .prompt)
-// and the .rich-text class, matching the structure that the Rust implementation
-// builds in get.rs render_card().
 package cache
 
 import (
@@ -16,13 +12,6 @@ import (
 )
 
 // Entry holds the pre-rendered HTML for one card.
-//
-// Front is the HTML shown before the answer is revealed.
-// Back is the HTML shown after the answer is revealed.
-//
-// Both strings include the wrapper divs (.question/.answer/.prompt) and the
-// .rich-text class so that CSS rules apply without any further wrapping in the
-// template.
 type Entry struct {
 	Front string
 	Back  string
@@ -34,19 +23,19 @@ type Cache struct {
 }
 
 // Build renders the front and back HTML for every due card and stores the
-// results in a new Cache. Cards whose rendering fails are silently skipped;
-// the handler will fall back gracefully if the hash is absent.
-func Build(due []collection.DueCard) *Cache {
+// results in a new Cache.
+// fileMountBase is the URL prefix for the /file/ handler (e.g. "/drill/geo").
+func Build(due []collection.DueCard, fileMountBase string) *Cache {
 	c := &Cache{entries: make(map[types.CardHash]Entry, len(due))}
 	for _, dc := range due {
 		card := dc.Card
 		deckFilePath := card.FilePath()
 
-		frontContent, err := markdown.HTMLFront(card, deckFilePath)
+		frontContent, err := markdown.HTMLFront(card, deckFilePath, fileMountBase)
 		if err != nil {
 			continue
 		}
-		backContent, err := markdown.HTMLBack(card, deckFilePath)
+		backContent, err := markdown.HTMLBack(card, deckFilePath, fileMountBase)
 		if err != nil {
 			continue
 		}
@@ -54,12 +43,10 @@ func Build(due []collection.DueCard) *Cache {
 		var front, back string
 		switch card.CardType() {
 		case types.CardTypeBasic:
-			// Front (pre-reveal): question visible, answer area empty.
 			front = fmt.Sprintf(
 				`<div class="question rich-text">%s</div><div class="answer rich-text"></div>`,
 				frontContent,
 			)
-			// Back (post-reveal): question and answer both visible.
 			back = fmt.Sprintf(
 				`<div class="question rich-text">%s</div><div class="answer rich-text">%s</div>`,
 				frontContent, backContent,
