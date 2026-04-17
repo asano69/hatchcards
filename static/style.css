@@ -1,3 +1,13 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+:root {
+    --font-sans: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    --font-serif: "TeX Gyre Termes", "Nimbus Roman No9 L", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    --font-mono: "Menlo", "Consolas", "Monaco", "Courier New", monospace;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -18,9 +28,7 @@ body,
 }
 
 body {
-    font-family:
-        "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times",
-        serif;
+    font-family: var(--font-serif);
     background-color: #ffffff;
     color: #000000;
 }
@@ -56,9 +64,7 @@ body {
     border: 1px solid #999;
     padding: 16px 24px;
     font-size: 24px;
-    font-family:
-        "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times",
-        serif;
+    font-family: var(--font-serif);
     text-decoration: none;
     color: black;
     border-radius: 6px;
@@ -75,7 +81,7 @@ body {
     text-align: center;
     color: #888;
     font-size: 20px;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
 }
 
 /* =========================================================================
@@ -227,7 +233,7 @@ body {
     border-collapse: collapse;
     width: 100%;
     font-size: 0.65em;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     line-height: 1.6;
     border: 1px solid #999;
 }
@@ -314,7 +320,7 @@ body {
     padding: 7px 12px;
     font-size: 16px;
     color: black;
-    font-family: system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    font-family: var(--font-sans);
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
@@ -402,7 +408,7 @@ body {
     color: white;
     padding: 12px 24px;
     font-size: 18px;
-    font-family: system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    font-family: var(--font-sans);
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
