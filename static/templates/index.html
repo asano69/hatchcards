@@ -1,0 +1,14 @@
+{{define "content"}}
+<div class="index-wrap">
+    <h1>Hashcards</h1>
+    {{if .Sessions}}
+    <ul class="session-list">
+        {{range .Sessions}}
+        <li><a href="{{.DrillURL}}" class="session-link">{{.Name}}</a></li>
+        {{end}}
+    </ul>
+    {{else}}
+    <p class="index-message">No sessions configured.</p>
+    {{end}}
+</div>
+{{end}}

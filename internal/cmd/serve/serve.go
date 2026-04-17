@@ -5,10 +5,12 @@ package serve
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -33,25 +35,23 @@ type sessionInfo struct {
 }
 
 // Run opens the database and collection once, registers all drill routes, then
-// starts listening. The database and collection are shared across all sessions,
-// which avoids the "Card already exists" error that arose when each session
-// opened its own connection and ran syncDB independently.
+// starts listening. The database and collection are shared across all sessions.
 func Run(cfg *config.Config, staticDir string, out io.Writer) error {
-	database, err := db.Open(cfg.Server.DB)
+	database, err := db.Open(cfg.Data.DB)
 	if err != nil {
 		return err
 	}
 	defer database.Close()
 
-	col, err := collection.Load(cfg.Server.Root, database)
+	col, err := collection.Load(cfg.Data.Root, database)
 	if err != nil {
 		return err
 	}
 
 	fsrsCfg := fsrs.FSRSConfig{
-		TargetRecall: cfg.Server.TargetRecall,
-		MinInterval:  cfg.Server.MinInterval,
-		MaxInterval:  cfg.Server.MaxInterval,
+		TargetRecall: cfg.FSRS.TargetRecall,
+		MinInterval:  cfg.FSRS.MinInterval,
+		MaxInterval:  cfg.FSRS.MaxInterval,
 	}
 
 	router := mux.NewRouter()
@@ -68,7 +68,7 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 		})
 	}
 
-	// /api/sessions returns the session list as JSON.
+	// /api/sessions returns the session list as JSON for backward compatibility.
 	sessionInfos := buildSessionList(cfg)
 	sessionJSON, _ := json.Marshal(sessionInfos)
 	router.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
@@ -76,18 +76,31 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 		w.Write(sessionJSON)
 	}).Methods(http.MethodGet)
 
-	// Register a drill route for each configured session.
-	for _, sc := range cfg.Sessions {
+	// Register drill routes with more specific (longer) paths first to avoid
+	// the all-decks PathPrefix("/drill") intercepting named-deck requests.
+	sessions := make([]config.SessionConfig, len(cfg.Sessions))
+	copy(sessions, cfg.Sessions)
+	sort.Slice(sessions, func(i, j int) bool {
+		return len(sessions[i].Path) > len(sessions[j].Path)
+	})
+	for _, sc := range sessions {
 		sc := sc
-		mountPath := "/drill/" + sc.Path
+		// Use "/drill" (no trailing slash) for the all-decks session so that
+		// the BasePath in templates becomes "/drill/" without a double slash.
+		var mountPath string
+		if sc.Path == "" {
+			mountPath = "/drill"
+		} else {
+			mountPath = "/drill/" + sc.Path
+		}
 		if err := registerDrillRoute(router, sc, col, database, fsrsCfg, mountPath, staticDir); err != nil {
 			return fmt.Errorf("setup session %q: %w", sc.Name, err)
 		}
 	}
 
-	// Index page.
+	// Index page — server-rendered with Go templates, no client-side JS fetch needed.
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		renderIndex(w, staticDir, sessionInfos)
 	}).Methods(http.MethodGet)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -99,8 +112,7 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	return http.Serve(ln, router)
 }
 
-// buildSessionList converts config sessions to the JSON-serialisable form,
-// including the full drill URL for each session.
+// buildSessionList converts config sessions to the JSON-serialisable form.
 func buildSessionList(cfg *config.Config) []sessionInfo {
 	list := make([]sessionInfo, 0, len(cfg.Sessions))
 	for _, sc := range cfg.Sessions {
@@ -117,8 +129,25 @@ func buildSessionList(cfg *config.Config) []sessionInfo {
 	return list
 }
 
-// registerDrillRoute sets up a drill handler for one session using the
-// pre-loaded collection and shared database connection.
+// renderIndex renders the index page using Go templates with the session list
+// injected server-side, eliminating the need for a client-side fetch.
+func renderIndex(w http.ResponseWriter, staticDir string, sessions []sessionInfo) {
+	tmpl, err := template.ParseFiles(
+		filepath.Join(staticDir, "templates", "base.html"),
+		filepath.Join(staticDir, "templates", "index.html"),
+	)
+	if err != nil {
+		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := struct{ Sessions []sessionInfo }{sessions}
+	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+		fmt.Printf("index render error: %v\n", err)
+	}
+}
+
+// registerDrillRoute sets up a drill handler for one session.
 func registerDrillRoute(
 	router *mux.Router,
 	sc config.SessionConfig,

@@ -42,7 +42,7 @@ type Collection struct {
 // Load walks root for "*.md" files, parses every deck it finds, inserts any
 // new cards into database, and returns the populated Collection.
 // Cards that exist in the database but are no longer present in any deck file
-// are removed from the database.
+// are left untouched; use the "orphans delete" command to remove them.
 func Load(root string, database *db.Database) (*Collection, error) {
 	cards, err := walkDecks(root)
 	if err != nil {
@@ -57,8 +57,8 @@ func Load(root string, database *db.Database) (*Collection, error) {
 }
 
 // DueToday returns every card that is due for review on today's date, paired
-// with its current performance record. Cards are returned in a stable order
-// (sorted by hash hex string) so callers can shuffle them deterministically.
+// with its current performance record. Cards are returned sorted by hash for
+// a stable, deterministic order before any caller-side shuffle.
 func (c *Collection) DueToday(today types.Date) ([]DueCard, error) {
 	dueHashes, err := c.DB.DueToday(today)
 	if err != nil {
@@ -77,7 +77,6 @@ func (c *Collection) DueToday(today types.Date) ([]DueCard, error) {
 		due = append(due, DueCard{Card: card, Performance: perf})
 	}
 
-	// Sort by hash for a stable, deterministic order before any shuffle.
 	sort.Slice(due, func(i, j int) bool {
 		return due[i].Card.Hash().Less(due[j].Card.Hash())
 	})
@@ -120,7 +119,8 @@ func (c *Collection) CardByHash(hash types.CardHash) (types.Card, error) {
 }
 
 // walkDecks recursively finds all "*.md" files under root, parses each one,
-// and returns all cards in a stable order (sorted by file path then card hash).
+// and returns all cards deduplicated and sorted by hash — matching the Rust
+// implementation's parse_deck behaviour.
 func walkDecks(root string) ([]types.Card, error) {
 	var deckPaths []string
 
@@ -137,7 +137,6 @@ func walkDecks(root string) ([]types.Card, error) {
 		return nil, errs.Newf("walk collection root %s: %v", root, err)
 	}
 
-	// Sort paths for stable cross-platform ordering.
 	sort.Strings(deckPaths)
 
 	var allCards []types.Card
@@ -148,15 +147,27 @@ func walkDecks(root string) ([]types.Card, error) {
 		}
 		allCards = append(allCards, cards...)
 	}
-	return allCards, nil
+
+	// Sort by hash then deduplicate across files, matching the Rust
+	// implementation which calls sort_by_key + dedup_by_key on the full list.
+	sort.Slice(allCards, func(i, j int) bool {
+		return allCards[i].Hash().Less(allCards[j].Hash())
+	})
+	seen := make(map[types.CardHash]struct{}, len(allCards))
+	deduped := make([]types.Card, 0, len(allCards))
+	for _, c := range allCards {
+		if _, exists := seen[c.Hash()]; !exists {
+			seen[c.Hash()] = struct{}{}
+			deduped = append(deduped, c)
+		}
+	}
+	return deduped, nil
 }
 
 // syncDB ensures the database reflects the current set of cards on disk.
 // New cards are inserted; cards no longer on disk are left untouched
-// and can be removed explicitly with the "orphans delete" command,
-// matching the Rust implementation's behaviour.
+// and can be removed explicitly with the "orphans delete" command.
 func syncDB(cards []types.Card, database *db.Database) error {
-	// Build a set of hashes currently on disk.
 	inDB, err := database.CardHashes()
 	if err != nil {
 		return err
@@ -164,7 +175,6 @@ func syncDB(cards []types.Card, database *db.Database) error {
 
 	now := types.Now()
 
-	// Insert cards that are on disk but not in the database.
 	for _, card := range cards {
 		if _, exists := inDB[card.Hash()]; !exists {
 			if err := database.InsertCard(card.Hash(), now); err != nil {

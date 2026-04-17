@@ -6,6 +6,8 @@ package db
 import (
 	"database/sql"
 	_ "embed"
+	"os"
+	"path/filepath"
 
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/fsrs"
@@ -43,8 +45,7 @@ type ReviewRow struct {
 }
 
 // Database wraps a *sql.DB and exposes the operations used by the rest of the
-// application. It is safe to use from multiple goroutines provided the
-// underlying SQLite driver serialises writes, which modernc.org/sqlite does.
+// application.
 type Database struct {
 	conn *sql.DB
 }
@@ -52,6 +53,16 @@ type Database struct {
 // Open opens the SQLite database at the given path, enabling foreign keys and
 // initialising the schema if it does not yet exist.
 func Open(path string) (*Database, error) {
+	// Check that the parent directory exists before SQLite tries to open the
+	// file, so we can produce a clear error message instead of the cryptic
+	// "out of memory" error that SQLite returns for a missing directory.
+	if path != ":memory:" {
+		dir := filepath.Dir(path)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			return nil, errs.Newf("database directory does not exist: %s (create it or update [data].db in config.toml)", dir)
+		}
+	}
+
 	conn, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, errs.Newf("open database: %v", err)
@@ -163,7 +174,6 @@ func (db *Database) DueToday(today types.Date) (map[types.CardHash]struct{}, err
 		if err != nil {
 			return nil, err
 		}
-		// A nil due_date means the card has never been reviewed, so it is due.
 		if dueDateStr == nil {
 			due[h] = struct{}{}
 			continue
@@ -212,7 +222,6 @@ func (db *Database) GetCardPerformanceOpt(cardHash types.CardHash) (*types.Perfo
 		return nil, errs.Newf("get card performance: %v", err)
 	}
 
-	// All scheduling columns are set together; if any is null the card is new.
 	if lastReviewedAtStr == nil || stability == nil || difficulty == nil ||
 		intervalRaw == nil || intervalDays == nil || dueDateStr == nil {
 		p := types.NewCardPerformance()
@@ -383,7 +392,6 @@ func (db *Database) DeleteCard(cardHash types.CardHash) error {
 }
 
 // CountReviewsInDate returns the number of reviews recorded on the given date.
-// The date is matched against the first ten characters of the reviewed_at column.
 func (db *Database) CountReviewsInDate(date types.Date) (int, error) {
 	var count int
 	err := db.conn.QueryRow(

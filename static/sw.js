@@ -1,7 +1,10 @@
-// hashcards service worker
-// Caches the app shell on install; serves from cache when offline.
-const CACHE = "hashcards-v1";
-const PRECACHE = ["/manifest.json", "/icon.svg"];
+// hashcards service worker — cache-first for static assets, network-first for pages.
+const CACHE = "hashcards-v2";
+const PRECACHE = [
+  "/static/style.css",
+  "/static/script.js",
+  "/static/icon.svg",
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -11,6 +14,7 @@ self.addEventListener("install", e => {
 });
 
 self.addEventListener("activate", e => {
+  // Remove any caches from previous versions.
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -20,18 +24,27 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  // Network-first for navigation and API; cache-first for static assets.
   const url = new URL(e.request.url);
-  const isStatic = /\.(png|jpg|jpeg|gif|webp|svg|woff2?|ttf|css|js)$/.test(url.pathname);
 
-  if (isStatic) {
+  // Cache-first only for static assets served under /static/.
+  const isStaticAsset =
+    url.pathname.startsWith("/static/") &&
+    /\.(css|js|svg|woff2?|ttf|png|jpg|jpeg|gif|webp)$/.test(url.pathname);
+
+  if (isStaticAsset) {
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-        const clone = resp.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return resp;
-      }))
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(resp => {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return resp;
+        });
+      })
     );
+    return;
   }
-  // For everything else, go to network (dynamic card content stays fresh).
+
+  // For all other requests (pages, API, file serving) go to the network.
+  // This ensures card content and session state are always fresh.
 });
