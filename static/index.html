@@ -3,8 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hashcards</title>
+<title>Hashcards</title>
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg" >
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon.svg">
+
+<script>
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker.register("/sw.js");
+</script>
 <link rel="stylesheet" href="/static/style.css">
 <style>
 .index-wrap {
@@ -69,7 +81,7 @@ fetch('/api/sessions')
         sessions.forEach(function(s) {
             var li = document.createElement('li');
             var a = document.createElement('a');
-            a.href = '/drill/' + s.path + '/';
+            a.href = s.drill_url;
             a.textContent = s.name;
             a.className = 'session-link';
             li.appendChild(a);

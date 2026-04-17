@@ -1,19 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hashcards</title>
-<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<link rel="stylesheet" href="/static/katex/katex.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-<script defer src="/static/katex/katex.min.js"></script>
-<script defer src="/static/katex/contrib/mhchem.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<link rel="stylesheet" href="/static/style.css">
-<noscript><style>.card-content { opacity: 1; }</style></noscript>
-</head>
-<body>
+{{define "head_extra"}}<noscript><style>.card-content { opacity: 1; }</style></noscript>{{end}}
+
+{{define "content"}}
 <div class="root">
   <div class="header">
     <div class="progress-bar">
@@ -24,11 +11,7 @@
     <div class="card">
       <div class="card-header"><h1>{{.DeckName}}</h1></div>
       <div class="card-content">
-        {{if .Revealed}}
-          {{.Back}}
-        {{else}}
-          {{.Front}}
-        {{end}}
+        {{if .Revealed}}{{.Back}}{{else}}{{.Front}}{{end}}
       </div>
     </div>
   </div>
@@ -60,7 +43,9 @@
     </form>
   </div>
 </div>
+{{end}}
+
+{{define "scripts"}}
 <script>{{.MacrosJS}}</script>
 <script src="/static/script.js"></script>
-</body>
-</html>
+{{end}}

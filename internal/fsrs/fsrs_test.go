@@ -27,7 +27,6 @@ func (s simStep) equal(other simStep) bool {
 }
 
 // sim simulates a series of reviews, matching the Rust test helper sim().
-// It returns one simStep per review.
 func sim(grades []Grade) []simStep {
 	if len(grades) == 0 {
 		return nil
@@ -54,8 +53,6 @@ func sim(grades []Grade) []simStep {
 	return steps
 }
 
-// TestIntervalEqualsStability verifies that at R_d=0.9, Interval(s) ≈ s.
-// Matches Rust's test_interval_equals_stability.
 func TestIntervalEqualsStability(t *testing.T) {
 	samples := 100
 	start := 0.1
@@ -70,8 +67,6 @@ func TestIntervalEqualsStability(t *testing.T) {
 	}
 }
 
-// TestInitialDifficultyOfForgetting verifies D_0(Forgot) = W[4].
-// Matches Rust's test_initial_difficulty_of_forgetting.
 func TestInitialDifficultyOfForgetting(t *testing.T) {
 	got := InitialDifficulty(GradeForgot)
 	if got != W[4] {
@@ -79,7 +74,6 @@ func TestInitialDifficultyOfForgetting(t *testing.T) {
 	}
 }
 
-// TestThreeEasies matches Rust's test_3e.
 func TestThreeEasies(t *testing.T) {
 	grades := []Grade{GradeEasy, GradeEasy, GradeEasy}
 	expected := []simStep{
@@ -90,7 +84,6 @@ func TestThreeEasies(t *testing.T) {
 	checkSim(t, grades, expected)
 }
 
-// TestThreeGoods matches Rust's test_3g.
 func TestThreeGoods(t *testing.T) {
 	grades := []Grade{GradeGood, GradeGood, GradeGood}
 	expected := []simStep{
@@ -101,7 +94,6 @@ func TestThreeGoods(t *testing.T) {
 	checkSim(t, grades, expected)
 }
 
-// TestTwoHards matches Rust's test_2h.
 func TestTwoHards(t *testing.T) {
 	grades := []Grade{GradeHard, GradeHard}
 	expected := []simStep{
@@ -111,7 +103,6 @@ func TestTwoHards(t *testing.T) {
 	checkSim(t, grades, expected)
 }
 
-// TestTwoForgots matches Rust's test_2f.
 func TestTwoForgots(t *testing.T) {
 	grades := []Grade{GradeForgot, GradeForgot}
 	expected := []simStep{
@@ -121,7 +112,6 @@ func TestTwoForgots(t *testing.T) {
 	checkSim(t, grades, expected)
 }
 
-// TestGoodThenForgot matches Rust's test_gf.
 func TestGoodThenForgot(t *testing.T) {
 	grades := []Grade{GradeGood, GradeForgot}
 	expected := []simStep{
@@ -131,7 +121,6 @@ func TestGoodThenForgot(t *testing.T) {
 	checkSim(t, grades, expected)
 }
 
-// checkSim is a shared helper for simulation sequence tests.
 func checkSim(t *testing.T, grades []Grade, expected []simStep) {
 	t.Helper()
 	actual := sim(grades)
@@ -148,7 +137,6 @@ func checkSim(t *testing.T, grades []Grade, expected []simStep) {
 	}
 }
 
-// TestGradeString verifies Grade.String() returns the lowercase DB representation.
 func TestGradeString(t *testing.T) {
 	tests := []struct {
 		grade Grade
@@ -166,7 +154,6 @@ func TestGradeString(t *testing.T) {
 	}
 }
 
-// TestParseGradeRoundtrip matches Rust's test_grade_serialization_roundtrip.
 func TestParseGradeRoundtrip(t *testing.T) {
 	grades := []Grade{GradeForgot, GradeHard, GradeGood, GradeEasy}
 	for _, g := range grades {
@@ -181,8 +168,6 @@ func TestParseGradeRoundtrip(t *testing.T) {
 	}
 }
 
-// TestParseGradeJSON verifies ParseGradeJSON accepts PascalCase names.
-// Matches Rust's test_grade_serialization_format (Rust serialises as PascalCase).
 func TestParseGradeJSON(t *testing.T) {
 	tests := []struct {
 		s    string
@@ -205,7 +190,6 @@ func TestParseGradeJSON(t *testing.T) {
 	}
 }
 
-// TestInvalidGradeString matches Rust's test_invalid_grade_string.
 func TestInvalidGradeString(t *testing.T) {
 	invalids := []string{"", "invalid"}
 	for _, s := range invalids {
@@ -219,7 +203,7 @@ func TestInvalidGradeString(t *testing.T) {
 func TestUpdatePerformanceNewCard(t *testing.T) {
 	reviewedAt := types.Now()
 	perf := types.NewCardPerformance()
-	result := UpdatePerformance(perf, GradeGood, reviewedAt)
+	result := UpdatePerformance(perf, GradeGood, reviewedAt, DefaultFSRSConfig)
 
 	if !result.LastReviewedAt.Equal(reviewedAt) {
 		t.Errorf("LastReviewedAt = %v, want %v", result.LastReviewedAt, reviewedAt)
@@ -244,7 +228,6 @@ func TestUpdatePerformanceNewCard(t *testing.T) {
 // TestUpdatePerformanceAlreadyReviewed matches Rust's test_update_already_reviewed_card.
 func TestUpdatePerformanceAlreadyReviewed(t *testing.T) {
 	now := types.Now()
-	// Simulate a card last reviewed 3 days ago.
 	lastReviewedAt := types.NewTimestamp(now.Time().Add(-3 * 24 * time.Hour))
 	dueDate := types.NewDate(lastReviewedAt.Time().Add(3 * 24 * time.Hour))
 
@@ -258,7 +241,7 @@ func TestUpdatePerformanceAlreadyReviewed(t *testing.T) {
 		ReviewCount:    1,
 	}
 	perf := types.ReviewedCardPerformance(rp)
-	result := UpdatePerformance(perf, GradeEasy, now)
+	result := UpdatePerformance(perf, GradeEasy, now, DefaultFSRSConfig)
 
 	if !result.LastReviewedAt.Equal(now) {
 		t.Errorf("LastReviewedAt = %v, want %v", result.LastReviewedAt, now)
