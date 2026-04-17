@@ -1,3 +1,6 @@
+---
+ name = "no art, no life"
+---
 Q: What is the title of this painting?
 
 ![](@/thetempest.webp)

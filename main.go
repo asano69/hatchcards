@@ -166,7 +166,7 @@ func serveCmd() *cobra.Command {
 			return serve.Run(cfg, staticDir, os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&configPath, "config", "hashcards.toml",
+	cmd.Flags().StringVar(&configPath, "config", "config.toml",
 		"path to the TOML config file")
 	cmd.Flags().StringVar(&staticDir, "static", "",
 		"path to the static assets directory (default: ./static)")

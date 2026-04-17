@@ -34,7 +34,7 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	if cfg.Server.Port == 0 {
-		cfg.Server.Port = 8080
+		cfg.Server.Port = 3000
 	}
 	for i := range cfg.Sessions {
 		s := &cfg.Sessions[i]
