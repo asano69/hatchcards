@@ -21,7 +21,66 @@ body {
     font-family:
         "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times",
         serif;
+    background-color: #ffffff;
+    color: #000000;
 }
+
+/* =========================================================================
+   Index page
+   ========================================================================= */
+
+.index-wrap {
+    max-width: 600px;
+    margin: 80px auto;
+    padding: 0 24px;
+}
+
+.index-wrap h1 {
+    font-size: 48px;
+    margin-bottom: 48px;
+    text-align: center;
+}
+
+.session-list {
+    list-style: none;
+    padding: 0;
+}
+
+.session-list li {
+    margin-bottom: 16px;
+}
+
+.session-link {
+    display: block;
+    background: white;
+    border: 1px solid #999;
+    padding: 16px 24px;
+    font-size: 24px;
+    font-family:
+        "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times",
+        serif;
+    text-decoration: none;
+    color: black;
+    border-radius: 6px;
+    box-shadow: #ccc 0px 1px 3px 0px;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.session-link:hover {
+    background: #f0f0f0;
+    box-shadow: #bbb 0px 2px 5px 0px;
+}
+
+.index-message {
+    text-align: center;
+    color: #888;
+    font-size: 20px;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* =========================================================================
+   Drill interface
+   ========================================================================= */
 
 .root {
     display: flex;
@@ -102,6 +161,10 @@ body {
 .root .card-container .card .card-content .answer {
     min-height: 30px;
 }
+
+/* =========================================================================
+   Rich text content
+   ========================================================================= */
 
 .rich-text {
     font-size: 30px;
@@ -226,6 +289,10 @@ body {
     font-size: 1em;
 }
 
+/* =========================================================================
+   Controls
+   ========================================================================= */
+
 .root .controls {
     border-top: 1px solid black;
 }
@@ -271,7 +338,10 @@ body {
     opacity: 0.4;
 }
 
-/* Completion page */
+/* =========================================================================
+   Completion page
+   ========================================================================= */
+
 .finished {
     padding: 48px;
 }
@@ -324,6 +394,10 @@ body {
     text-align: center;
 }
 
+/* =========================================================================
+   Shared buttons
+   ========================================================================= */
+
 .button {
     color: white;
     padding: 12px 24px;
@@ -355,11 +429,144 @@ body {
     background: #0069d9;
 }
 
-
 /* Card opacity animation support */
 .card-content {
     opacity: 0;
 }
+
+/* =========================================================================
+   Dark mode
+   ========================================================================= */
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+    }
+
+    /* Index page */
+    .session-link {
+        background: #2d2d2d;
+        border-color: #555;
+        color: #e0e0e0;
+        box-shadow: #111 0px 1px 3px 0px;
+    }
+
+    .session-link:hover {
+        background: #383838;
+        box-shadow: #111 0px 2px 5px 0px;
+    }
+
+    /* Drill header / controls */
+    .root .header,
+    .root .controls {
+        background: #252525;
+    }
+
+    .root .header {
+        border-bottom-color: #444;
+    }
+
+    .root .header .progress-bar {
+        background: #333;
+        border-color: #555;
+    }
+
+    .root .header .progress-bar .progress-fill {
+        background: #2a6e2a;
+    }
+
+    .root .card-container {
+        background: #1e1e1e;
+    }
+
+    .root .card-container .card {
+        background: #2d2d2d;
+    }
+
+    .root .card-container .card .card-header {
+        border-bottom-color: #444;
+    }
+
+    .root .card-container .card .card-content .question {
+        border-bottom-color: #444;
+    }
+
+    .root .controls {
+        border-top-color: #444;
+    }
+
+    .root .controls form input {
+        background: #333;
+        border-color: #555;
+        color: #e0e0e0;
+        box-shadow: #111 0px 1px 3px 0px;
+    }
+
+    .root .controls form input:hover {
+        background: #3a3a3a;
+        border-color: #666;
+    }
+
+    .root .controls form input:active {
+        background: #404040;
+    }
+
+    /* Rich text */
+    .rich-text .cloze-blank {
+        background: #555;
+    }
+
+    .rich-text blockquote {
+        background: #333;
+        border-left-color: #555;
+    }
+
+    .rich-text table {
+        border-color: #555;
+    }
+
+    .rich-text table th,
+    .rich-text table td {
+        border-color: #444;
+    }
+
+    .rich-text table th {
+        background: #3a3a3a;
+    }
+
+    .rich-text table tbody tr:nth-child(odd) {
+        background: #2d2d2d;
+    }
+
+    .rich-text table tbody tr:nth-child(even) {
+        background: #323232;
+    }
+
+    .rich-text code {
+        background: #333;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+
+    .rich-text pre {
+        background: #333;
+        border-color: #444;
+    }
+
+    /* Completion page */
+    .finished h2 {
+        border-bottom-color: #444;
+    }
+
+    .finished .stats tr {
+        border-bottom-color: #333;
+    }
+}
+
+/* =========================================================================
+   Responsive layout
+   ========================================================================= */
 
 /* Mobile */
 @media (max-width: 768px) {
@@ -387,8 +594,40 @@ body {
         justify-content: space-between;
     }
 
+    .finished {
+        padding: 24px;
+    }
+
+    .finished h1 {
+        font-size: 36px;
+        margin-bottom: 36px;
+    }
+
+    .finished h2 {
+        font-size: 30px;
+        margin-bottom: 16px;
+    }
+
+    .finished .stats {
+        font-size: 16px;
+    }
+
     .finished .stats td.val {
         padding-left: 24px;
+    }
+
+    .index-wrap {
+        margin: 40px auto;
+    }
+
+    .index-wrap h1 {
+        font-size: 36px;
+        margin-bottom: 32px;
+    }
+
+    .session-link {
+        font-size: 20px;
+        padding: 12px 18px;
     }
 }
 
@@ -416,5 +655,12 @@ body {
 
     .finished .stats td.val {
         padding-left: 48px;
+    }
+}
+
+@media (min-width: 769px) and (prefers-color-scheme: dark) {
+    .card {
+        box-shadow: 0px 0px 48px 16px #111;
+        border-color: #444;
     }
 }
