@@ -1,6 +1,5 @@
-rustのhashcardsからgoのポートをつくることが目的です。オリジナルのrustプロジェクトはrust-hashcardsにあります。goポート側には*_test.goが存在しないので、rustのtestコードを確認して仕様を理解してください。なお、必ずしも*_test.goを作る必要はないです。testはあくまでもプログラムを理解するためののガイドラインであり、rustのtestを移植する必要はないです。
+# go-Hashcards
 
-このhashcardsはFSRSのflashcardsであり、カードをどれほど覚えていたかのボタンを押すことによってカードの状態が更新され、最適な復習タイミングがスケジュールしてくれるところが本質的な機能です。この部分はrustから機能を損ねないように慎重に移植する必要があります。rustコードとgoコードを見比べながら、安全に移植できた場所から、rustソースコードを削除し、go側に完全移行しますので、go側に問題があれば修正し、問題がなければrust側のファイルを削除したいです。すべてのrustファイルを削除することが最初の目標です。
+- go-hashcards is a plain-text spaced repetition system written in Rust. It parses Markdown files containing flashcards, stores performance data in SQLite, and presents cards through a web interface using the FSRS algorithm for scheduling.
 
-wrapperは、オリジナルのrust-hashcardsにはない部分です。rust-hashcardsからの移行が終了次第、このwrapperをgo-hashcardsに統合します。
 
