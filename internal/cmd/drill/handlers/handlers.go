@@ -1,15 +1,15 @@
 // Package handlers implements the HTTP handlers for the drill server.
 //
-// Actions handled by POST /:
+// Actions handled by POST <mountPath>/:
 //
-//	Reveal   — flip the card to show the answer
-//	Forgot   — grade the card and advance
-//	Hard     — grade the card and advance
-//	Good     — grade the card and advance
-//	Easy     — grade the card and advance
-//	Undo     — reverse the most recent grade
-//	End      — end the session early (saves progress)
-//	Shutdown — shut the server down (only valid after session ends)
+//	Reveal  — flip the card to show the answer
+//	Forgot  — grade the card and advance
+//	Hard    — grade the card and advance
+//	Good    — grade the card and advance
+//	Easy    — grade the card and advance
+//	Undo    — reverse the most recent grade
+//	End     — end the session early (saves progress)
+//	Reset   — save current session and start a new one
 package handlers
 
 import (
@@ -27,15 +27,14 @@ import (
 
 	drillcache "github.com/asano69/hashcards/internal/cmd/drill/cache"
 	"github.com/asano69/hashcards/internal/cmd/drill/state"
+	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/fsrs"
+	"github.com/asano69/hashcards/internal/rng"
 	"github.com/asano69/hashcards/internal/types"
 )
 
 // mimeTypes maps lowercase file extensions to Content-Type values.
-// An explicit map is used instead of mime.TypeByExtension so that the correct
-// type is returned on every OS regardless of the system MIME database
-// (e.g. image/webp is not always registered on macOS).
 var mimeTypes = map[string]string{
 	".png":  "image/png",
 	".jpg":  "image/jpeg",
@@ -50,10 +49,61 @@ var mimeTypes = map[string]string{
 	".webm": "video/webm",
 }
 
+// FilterDue applies card-limit, new-card-limit, and deck-filter to a due list.
+func FilterDue(due []collection.DueCard, cardLimit *int, newCardLimit *int, deckFilter *string) []collection.DueCard {
+	if deckFilter != nil {
+		filtered := due[:0]
+		for _, dc := range due {
+			if dc.Card.DeckName() == *deckFilter {
+				filtered = append(filtered, dc)
+			}
+		}
+		due = filtered
+	}
+	if cardLimit != nil && len(due) > *cardLimit {
+		due = due[:*cardLimit]
+	}
+	if newCardLimit != nil {
+		limit := *newCardLimit
+		var result []collection.DueCard
+		newCount := 0
+		for _, dc := range due {
+			if dc.Performance.IsNew() {
+				if newCount >= limit {
+					continue
+				}
+				newCount++
+			}
+			result = append(result, dc)
+		}
+		due = result
+	}
+	return due
+}
+
+// BurySiblings removes all but the first cloze card sharing the same family hash.
+func BurySiblings(due []collection.DueCard) []collection.DueCard {
+	seen := make(map[types.CardHash]struct{})
+	result := make([]collection.DueCard, 0, len(due))
+	for _, dc := range due {
+		fh := dc.Card.FamilyHash()
+		if fh != nil {
+			if _, ok := seen[*fh]; ok {
+				continue
+			}
+			seen[*fh] = struct{}{}
+		}
+		result = append(result, dc)
+	}
+	return result
+}
+
 // Register attaches all drill routes to r.
-//   - staticDir: directory containing style.css, script.js, card.html, done.html, katex/
-//   - collectionRoot: root directory of the card collection (for /file/ serving)
+//   - mountPath: the URL path where this drill is mounted, e.g. "/drill/geo"
+//   - staticDir: directory containing HTML templates
+//   - collectionRoot: root directory of the card collection
 //   - answerControls: "full" (4 buttons) or "binary" (2 buttons)
+//   - cardLimit, newCardLimit, deckFilter, burySiblings: session filter params
 func Register(
 	r *mux.Router,
 	mu *sync.Mutex,
@@ -64,6 +114,11 @@ func Register(
 	staticDir string,
 	collectionRoot string,
 	answerControls string,
+	mountPath string,
+	cardLimit *int,
+	newCardLimit *int,
+	deckFilter *string,
+	burySiblings bool,
 ) {
 	macros := loadMacros(filepath.Join(collectionRoot, "macros.tex"))
 
@@ -77,26 +132,22 @@ func Register(
 		collectionRoot: collectionRoot,
 		macros:         macros,
 		answerControls: answerControls,
+		mountPath:      mountPath,
+		cardLimit:      cardLimit,
+		newCardLimit:   newCardLimit,
+		deckFilter:     deckFilter,
+		burySiblingsOn: burySiblings,
 	}
 
+	r.HandleFunc("", h.getRoot).Methods(http.MethodGet)
 	r.HandleFunc("/", h.getRoot).Methods(http.MethodGet)
+	r.HandleFunc("", h.postRoot).Methods(http.MethodPost)
 	r.HandleFunc("/", h.postRoot).Methods(http.MethodPost)
-
-	// Serve media files from the collection root at /file/<relative-path>.
 	r.PathPrefix("/file/").HandlerFunc(h.serveFile)
-
-	// Serve KaTeX assets at /katex/ so that the absolute font paths baked into
-	// katex.min.css (e.g. /katex/fonts/KaTeX_Main-Regular.woff2) resolve correctly.
-	katexFS := http.FileServer(http.Dir(filepath.Join(staticDir, "katex")))
-	r.PathPrefix("/katex/").Handler(http.StripPrefix("/katex/", katexFS))
-
-	// Serve remaining static assets (CSS, JS, templates).
-	staticFS := http.FileServer(http.Dir(staticDir))
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", staticFS))
 }
 
 // loadMacros reads a macros.tex file and returns (name, definition) pairs,
-// skipping lines that start with '%'.
+// skipping comment lines that start with '%'.
 func loadMacros(path string) [][2]string {
 	f, err := os.Open(path)
 	if err != nil {
@@ -131,17 +182,22 @@ type handler struct {
 	db             *db.Database
 	done           chan<- struct{}
 	sessionSaved   bool
-	startedAt      time.Time
 	endedAt        time.Time
 	staticDir      string
 	collectionRoot string
 	macros         [][2]string
-	// answerControls is "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good).
 	answerControls string
+	// mountPath is the URL prefix for this drill session (e.g. "/drill/geo").
+	mountPath string
+	// session filter params, stored for use when resetting the session.
+	cardLimit      *int
+	newCardLimit   *int
+	deckFilter     *string
+	burySiblingsOn bool
 }
 
 // -------------------------------------------------------------------------
-// GET /
+// GET handler
 // -------------------------------------------------------------------------
 
 func (h *handler) getRoot(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +205,11 @@ func (h *handler) getRoot(w http.ResponseWriter, r *http.Request) {
 	defer h.mu.Unlock()
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if h.sess.Total() == 0 {
+		h.renderNoCards(w)
+		return
+	}
 	if h.sess.IsFinished() {
 		h.renderDone(w)
 		return
@@ -157,7 +218,7 @@ func (h *handler) getRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 // -------------------------------------------------------------------------
-// POST /
+// POST handler
 // -------------------------------------------------------------------------
 
 func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
@@ -182,13 +243,9 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 	case "End":
 		h.finishSession()
 
-	case "Shutdown":
-		if h.sess.IsFinished() {
-			select {
-			case h.done <- struct{}{}:
-			default:
-			}
-		}
+	case "Reset":
+		h.finishSession()
+		h.resetSession()
 
 	case "Forgot", "Hard", "Good", "Easy":
 		if !h.sess.IsFinished() && h.sess.Revealed {
@@ -210,12 +267,12 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, h.mountPath+"/", http.StatusSeeOther)
 }
 
 // finishSession saves the session to the database and marks it as finished.
 func (h *handler) finishSession() {
-	if h.sessionSaved {
+	if h.sessionSaved || h.sess.Total() == 0 {
 		return
 	}
 	h.sess.Finish()
@@ -236,6 +293,30 @@ func (h *handler) finishSession() {
 			fmt.Printf("warning: update card performance: %v\n", err)
 		}
 	}
+}
+
+// resetSession loads fresh due cards and creates a new session state.
+// Called after finishSession to allow starting over without restarting the server.
+func (h *handler) resetSession() {
+	col, err := collection.Load(h.collectionRoot, h.db)
+	if err != nil {
+		fmt.Printf("warning: reset session load: %v\n", err)
+		return
+	}
+	due, err := col.DueToday(types.Today())
+	if err != nil {
+		fmt.Printf("warning: reset session due today: %v\n", err)
+		return
+	}
+	due = FilterDue(due, h.cardLimit, h.newCardLimit, h.deckFilter)
+	if h.burySiblingsOn {
+		due = BurySiblings(due)
+	}
+	r := rng.FromSeed(uint64(time.Now().UnixNano()))
+	h.sess = state.New(due, r)
+	h.cache = drillcache.Build(due, h.mountPath)
+	h.sessionSaved = false
+	h.endedAt = time.Time{}
 }
 
 func actionToGrade(action string) fsrs.Grade {
@@ -260,7 +341,7 @@ func actionToGrade(action string) fsrs.Grade {
 // serveFile serves a media file from the collection root directory.
 // Directory traversal via ".." components is rejected.
 func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
-	relPath := strings.TrimPrefix(r.URL.Path, "/file/")
+	relPath := strings.TrimPrefix(r.URL.Path, h.mountPath+"/file/")
 
 	if strings.Contains(relPath, "..") {
 		http.Error(w, "forbidden", http.StatusForbidden)
@@ -281,7 +362,6 @@ func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
 		ct = "application/octet-stream"
 	}
 	w.Header().Set("Content-Type", ct)
-
 	http.ServeFile(w, r, absPath)
 }
 
@@ -289,7 +369,7 @@ func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
 // Rendering
 // -------------------------------------------------------------------------
 
-// macrosJS returns a JavaScript snippet that sets up the KaTeX MACROS object.
+// macrosJS returns a JavaScript snippet that defines the KaTeX MACROS object.
 func (h *handler) macrosJS() template.JS {
 	var sb strings.Builder
 	sb.WriteString("var MACROS = {};\n")
@@ -335,6 +415,7 @@ func (h *handler) renderCard(w http.ResponseWriter) {
 		ProgressPct:    percent,
 		MacrosJS:       h.macrosJS(),
 		AnswerControls: h.answerControls,
+		BasePath:       h.mountPath + "/",
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(h.staticDir, "card.html"))
@@ -358,6 +439,7 @@ func (h *handler) renderDone(w http.ResponseWriter) {
 		Reviewed:    reviewed,
 		Total:       h.sess.Total(),
 		DurationSec: durationSec,
+		BasePath:    h.mountPath + "/",
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(h.staticDir, "done.html"))
@@ -368,6 +450,26 @@ func (h *handler) renderDone(w http.ResponseWriter) {
 	if err := tmpl.Execute(w, data); err != nil {
 		fmt.Printf("template error: %v\n", err)
 	}
+}
+
+func (h *handler) renderNoCards(w http.ResponseWriter) {
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hashcards</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="finished">
+  <h1>No cards due today.</h1>
+  <div class="shutdown-container">
+    <a href="/" style="font-size:18px;font-family:system-ui,sans-serif;">Return home</a>
+  </div>
+</div>
+</body>
+</html>`)
 }
 
 // -------------------------------------------------------------------------
@@ -384,12 +486,16 @@ type cardData struct {
 	Total       int
 	ProgressPct int
 	MacrosJS    template.JS
-	// AnswerControls is "full" or "binary", consumed by the card template.
+	// AnswerControls is "full" or "binary".
 	AnswerControls string
+	// BasePath is the mount path with trailing slash, e.g. "/drill/geo/".
+	BasePath string
 }
 
 type doneData struct {
 	Reviewed    int
 	Total       int
 	DurationSec int64
+	// BasePath is the mount path with trailing slash, e.g. "/drill/geo/".
+	BasePath string
 }

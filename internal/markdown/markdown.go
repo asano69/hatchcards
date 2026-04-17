@@ -3,8 +3,8 @@
 // HTMLFront and HTMLBack are the primary entry points. They accept a
 // types.Card and the absolute path of the deck file that contains it.
 //
-// Image and audio src attributes are rewritten to /file/<path> URLs so the
-// drill server can serve them directly, matching the Rust implementation.
+// Image and audio src attributes are rewritten to <fileMountBase>/file/<path>
+// URLs so the drill server can serve them directly.
 //
 // Math syntax ($...$ and $$...$$) is preprocessed into spans with the
 // "math-inline" and "math-display" CSS classes that KaTeX.js expects.
@@ -24,8 +24,8 @@ import (
 )
 
 // renderer is a configured goldmark instance shared across all calls.
-// WithUnsafe is required so that the raw HTML spans injected by preprocessMath
-// and rewriteAudioMarkdown pass through without being escaped.
+// WithUnsafe is required so that raw HTML injected by preprocessMath
+// and rewriteAudioMarkdown passes through without being escaped.
 var renderer = goldmark.New(
 	goldmark.WithExtensions(extension.Table, extension.Strikethrough),
 	goldmark.WithRendererOptions(html.WithUnsafe()),
@@ -52,35 +52,35 @@ var displayMathRe = regexp.MustCompile(`(?s)\$\$(.+?)\$\$`)
 var inlineMathRe = regexp.MustCompile(`\$([^$\n]+?)\$`)
 
 // HTMLFront returns the HTML for the front face of a card.
-func HTMLFront(card types.Card, deckFilePath string) (string, error) {
+// fileMountBase is the URL prefix used when constructing /file/ paths,
+// e.g. "/drill/geo". Pass "" to use the bare path "/file/...".
+func HTMLFront(card types.Card, deckFilePath string, fileMountBase string) (string, error) {
 	cc := card.Content()
 	switch cc.Kind() {
 	case types.CardTypeBasic:
-		return renderMarkdown(cc.Question, deckFilePath)
+		return renderMarkdown(cc.Question, deckFilePath, fileMountBase)
 	default: // CardTypeCloze
 		processed := processClozeText(cc.Text, cc.Start, cc.End, true)
-		return renderMarkdown(processed, deckFilePath)
+		return renderMarkdown(processed, deckFilePath, fileMountBase)
 	}
 }
 
 // HTMLBack returns the HTML for the back face of a card.
-func HTMLBack(card types.Card, deckFilePath string) (string, error) {
+// fileMountBase is the URL prefix used when constructing /file/ paths.
+func HTMLBack(card types.Card, deckFilePath string, fileMountBase string) (string, error) {
 	cc := card.Content()
 	switch cc.Kind() {
 	case types.CardTypeBasic:
-		return renderMarkdown(cc.Answer, deckFilePath)
+		return renderMarkdown(cc.Answer, deckFilePath, fileMountBase)
 	default: // CardTypeCloze
 		processed := processClozeText(cc.Text, cc.Start, cc.End, false)
-		return renderMarkdown(processed, deckFilePath)
+		return renderMarkdown(processed, deckFilePath, fileMountBase)
 	}
 }
 
 // renderMarkdown converts a Markdown string to HTML, then rewrites image and
-// audio src attributes to /file/<relative-path> URLs.
-func renderMarkdown(src, deckFilePath string) (string, error) {
-	// Order matters: audio must be rewritten before math preprocessing, and
-	// math must be preprocessed before goldmark renders the document (so the
-	// injected HTML spans are not escaped).
+// audio src attributes to <fileMountBase>/file/<relative-path> URLs.
+func renderMarkdown(src, deckFilePath, fileMountBase string) (string, error) {
 	src = rewriteAudioMarkdown(src)
 	src = preprocessMath(src)
 
@@ -88,13 +88,12 @@ func renderMarkdown(src, deckFilePath string) (string, error) {
 	if err := renderer.Convert([]byte(src), &buf); err != nil {
 		return "", err
 	}
-	result := rewriteSrcs(buf.String(), deckFilePath)
+	result := rewriteSrcs(buf.String(), deckFilePath, fileMountBase)
 	return result, nil
 }
 
 // preprocessMath converts $...$ and $$...$$ syntax into raw HTML spans that
-// KaTeX.js will find and render. Display math is processed first to avoid
-// partial matches by the inline pattern.
+// KaTeX.js will find and render.
 func preprocessMath(src string) string {
 	src = displayMathRe.ReplaceAllString(src, `<span class="math math-display">$1</span>`)
 	src = inlineMathRe.ReplaceAllString(src, `<span class="math math-inline">$1</span>`)
@@ -120,23 +119,17 @@ func rewriteAudioMarkdown(src string) string {
 }
 
 // rewriteSrcs rewrites every relative src attribute in <img> and <audio>
-// elements to a /file/<path> URL so the drill server can serve them.
+// elements to a <fileMountBase>/file/<path> URL so the drill server can serve them.
 // Absolute URLs and data URIs are left unchanged.
-//
-// The @/ prefix is the Rust media resolver's convention for collection-root-
-// relative paths (e.g. @/thetempest.webp). It is stripped so that the URL
-// becomes /file/thetempest.webp rather than the invalid /file/@/thetempest.webp.
-func rewriteSrcs(rawHTML, deckFilePath string) string {
+func rewriteSrcs(rawHTML, deckFilePath, fileMountBase string) string {
 	rewrite := func(src string) string {
 		if isURL(src) {
 			return src
 		}
-		// @/ means collection-root-relative. Strip the prefix so the /file/
-		// handler (which serves relative to the collection root) finds the file.
 		if strings.HasPrefix(src, "@/") {
-			return "/file/" + src[2:]
+			return fileMountBase + "/file/" + src[2:]
 		}
-		return "/file/" + filepath.ToSlash(src)
+		return fileMountBase + "/file/" + filepath.ToSlash(src)
 	}
 
 	result := imgSrcRe.ReplaceAllStringFunc(rawHTML, func(match string) string {
@@ -160,19 +153,15 @@ func rewriteSrcs(rawHTML, deckFilePath string) string {
 	return result
 }
 
-// isURL reports whether src is an external URL or data URI.
+// isURL reports whether src is an external URL, data URI, or already-rewritten path.
 func isURL(src string) bool {
 	return strings.HasPrefix(src, "http://") ||
 		strings.HasPrefix(src, "https://") ||
 		strings.HasPrefix(src, "data:") ||
-		strings.HasPrefix(src, "/file/")
+		strings.Contains(src, "/file/")
 }
 
 // processClozeText rewrites raw cloze text into HTML suitable for rendering.
-//
-// The span at targetStart/targetEnd is the deletion being tested:
-//   - isFront=true: replaced with a blank placeholder span.
-//   - isFront=false: wrapped in a highlight span.
 func processClozeText(rawText string, targetStart, targetEnd int, isFront bool) string {
 	textBytes := []byte(rawText)
 	if targetEnd >= len(textBytes) {

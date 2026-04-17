@@ -3,6 +3,7 @@ module github.com/asano69/hashcards
 go 1.25.0
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/spf13/cobra v1.10.2
 	github.com/yuin/goldmark v1.7.4

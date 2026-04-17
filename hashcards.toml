@@ -1,0 +1,28 @@
+[server]
+port = 3000
+
+[[session]]
+name = "Geography"
+path = "geo"
+root = "./example"
+db   = "./example/hashcards.db"
+
+[[session]]
+name = "Mathematics"
+path = "math"
+root  = "./example"
+db    = "./example/hashcards.db"
+from_deck = "Math"
+
+# All available fields:
+#
+# [[session]]
+# name           = "My Deck"       # display name shown on the index page
+# path           = "my-deck"       # URL path: /drill/my-deck/
+# root           = "./cards"       # collection root directory
+# db             = "hashcards.db"  # SQLite database path (default: hashcards.db)
+# from_deck      = ""              # only drill cards from this deck name (optional)
+# card_limit     = 0               # max cards per session, 0 = no limit
+# new_card_limit = 0               # max new cards per session, 0 = no limit
+# answer_controls = "full"         # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
+# bury_siblings  = true            # bury sibling cloze cards within a session

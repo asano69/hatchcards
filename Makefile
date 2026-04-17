@@ -1,4 +1,4 @@
-.PHONY: build clean reset drill
+.PHONY: build clean reset
 
 BINARY := hashcards
 
@@ -11,5 +11,6 @@ clean:
 reset:
 	rm -f hashcards.db
 
-drill:
-	./hashcards drill example
+.PHONY: serve
+serve:
+	./hashcards serve --config=hashcards.toml
