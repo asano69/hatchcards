@@ -1,7 +1,7 @@
 // hashcards service worker
 // Caches the app shell on install; serves from cache when offline.
 const CACHE = "hashcards-v1";
-const PRECACHE = ["/manifest.json", "/icon-192.png", "/icon-512.png"];
+const PRECACHE = ["/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(
