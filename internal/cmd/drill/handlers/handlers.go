@@ -458,14 +458,16 @@ func (h *handler) renderNoCards(w http.ResponseWriter) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hashcards</title>
+<title>Hashcards</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <div class="finished">
   <h1>No cards due today.</h1>
   <div class="shutdown-container">
-    <a href="/" style="font-size:18px;font-family:system-ui,sans-serif;">Return home</a>
+    <a href="/" class="button home-button" style="display:inline-block;text-decoration:none;" title="Return home">
+      Return home
+    </a>
   </div>
 </div>
 </body>

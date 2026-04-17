@@ -337,12 +337,12 @@ body {
     display: inline-block;
 }
 
-.shutdown-button {
+.reset-button {
     background: #dc3545;
     border: 1px solid #c82333;
 }
 
-.shutdown-button:hover {
+.reset-button:hover {
     background: #c82333;
 }
 
