@@ -1,35 +1,29 @@
 [server]
+host = "0.0.0.0"
 port = 3000
-
-[[session]]
-name = "Geography"
-#path = "geo"
-root = "./example"
 db   = "./data/hashcards.db"
+root = "./example"
+# FSRS scheduling parameters (these are the defaults; omit to keep defaults)
+target_recall = 0.9
+min_interval  = 1.0
+max_interval  = 256.0
+
+# Empty deck = all decks, routed to /drill/
+[[session]]
+deck = ""
+
+# Named deck = filtered by deck name, routed to /drill/<sanitized-name>/
+[[session]]
+deck = "Math"
 
 [[session]]
-name = "Mathematics"
-path = "math"
-root  = "./example"
-db    = "./data/hashcards.db"
-from_deck = "Math"
+deck = "no art, no life"
 
-[[session]]
-name = "No art, no life ‼️"
-path = "art"
-root  = "./example"
-db    = "./data/hashcards.db"
-from_deck = "no art, no life"
-
-# All available fields:
+# All available per-session fields:
 #
 # [[session]]
-# name           = "My Deck"       # display name shown on the index page
-# path           = "my-deck"       # URL path: /drill/my-deck/
-# root           = "./cards"       # collection root directory
-# db             = "hashcards.db"  # SQLite database path (default: hashcards.db)
-# from_deck      = ""              # only drill cards from this deck name (optional)
-# card_limit     = 0               # max cards per session, 0 = no limit
-# new_card_limit = 0               # max new cards per session, 0 = no limit
-# answer_controls = "full"         # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
-# bury_siblings  = true            # bury sibling cloze cards within a session
+# deck           = "My Deck"   # display name and deck filter; "" = all decks
+# card_limit     = 0           # max cards per session, 0 = no limit
+# new_card_limit = 0           # max new cards per session, 0 = no limit
+# answer_controls = "full"     # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
+# bury_siblings  = true        # bury sibling cloze cards within a session

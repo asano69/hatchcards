@@ -99,11 +99,6 @@ func BurySiblings(due []collection.DueCard) []collection.DueCard {
 }
 
 // Register attaches all drill routes to r.
-//   - mountPath: the URL path where this drill is mounted, e.g. "/drill/geo"
-//   - staticDir: directory containing HTML templates
-//   - collectionRoot: root directory of the card collection
-//   - answerControls: "full" (4 buttons) or "binary" (2 buttons)
-//   - cardLimit, newCardLimit, deckFilter, burySiblings: session filter params
 func Register(
 	r *mux.Router,
 	mu *sync.Mutex,
@@ -119,6 +114,7 @@ func Register(
 	newCardLimit *int,
 	deckFilter *string,
 	burySiblings bool,
+	fsrsCfg fsrs.FSRSConfig,
 ) {
 	macros := loadMacros(filepath.Join(collectionRoot, "macros.tex"))
 
@@ -137,6 +133,7 @@ func Register(
 		newCardLimit:   newCardLimit,
 		deckFilter:     deckFilter,
 		burySiblingsOn: burySiblings,
+		fsrsCfg:        fsrsCfg,
 	}
 
 	r.HandleFunc("", h.getRoot).Methods(http.MethodGet)
@@ -187,13 +184,12 @@ type handler struct {
 	collectionRoot string
 	macros         [][2]string
 	answerControls string
-	// mountPath is the URL prefix for this drill session (e.g. "/drill/geo").
-	mountPath string
-	// session filter params, stored for use when resetting the session.
+	mountPath      string
 	cardLimit      *int
 	newCardLimit   *int
 	deckFilter     *string
 	burySiblingsOn bool
+	fsrsCfg        fsrs.FSRSConfig
 }
 
 // -------------------------------------------------------------------------
@@ -296,7 +292,6 @@ func (h *handler) finishSession() {
 }
 
 // resetSession loads fresh due cards and creates a new session state.
-// Called after finishSession to allow starting over without restarting the server.
 func (h *handler) resetSession() {
 	col, err := collection.Load(h.collectionRoot, h.db)
 	if err != nil {
@@ -313,7 +308,7 @@ func (h *handler) resetSession() {
 		due = BurySiblings(due)
 	}
 	r := rng.FromSeed(uint64(time.Now().UnixNano()))
-	h.sess = state.New(due, r)
+	h.sess = state.New(due, r, h.fsrsCfg)
 	h.cache = drillcache.Build(due, h.mountPath)
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
@@ -366,27 +361,24 @@ func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // -------------------------------------------------------------------------
-// Rendering
+// Template rendering
 // -------------------------------------------------------------------------
 
-// macrosJS returns a JavaScript snippet that defines the KaTeX MACROS object.
-func (h *handler) macrosJS() template.JS {
-	var sb strings.Builder
-	sb.WriteString("var MACROS = {};\n")
-	for _, m := range h.macros {
-		name := escapeJSString(m[0])
-		def := escapeJSString(m[1])
-		sb.WriteString(fmt.Sprintf("MACROS['%s'] = '%s';\n", name, def))
+// renderTemplate parses base.html and the named page template together, then
+// executes the "base" named template. Parsing on each request is acceptable
+// for a flashcard app and keeps the code simple.
+func (h *handler) renderTemplate(w http.ResponseWriter, page string, data any) {
+	tmpl, err := template.ParseFiles(
+		filepath.Join(h.staticDir, "templates", "base.html"),
+		filepath.Join(h.staticDir, "templates", page),
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
+		return
 	}
-	return template.JS(sb.String())
-}
-
-func escapeJSString(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, "`", "\\`")
-	s = strings.ReplaceAll(s, "$", "\\$")
-	s = strings.ReplaceAll(s, "'", "\\'")
-	return s
+	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+		fmt.Printf("template render error (%s): %v\n", page, err)
+	}
 }
 
 func (h *handler) renderCard(w http.ResponseWriter) {
@@ -418,14 +410,7 @@ func (h *handler) renderCard(w http.ResponseWriter) {
 		BasePath:       h.mountPath + "/",
 	}
 
-	tmpl, err := template.ParseFiles(filepath.Join(h.staticDir, "card.html"))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if err := tmpl.Execute(w, data); err != nil {
-		fmt.Printf("template error: %v\n", err)
-	}
+	h.renderTemplate(w, "card.html", data)
 }
 
 func (h *handler) renderDone(w http.ResponseWriter) {
@@ -442,36 +427,35 @@ func (h *handler) renderDone(w http.ResponseWriter) {
 		BasePath:    h.mountPath + "/",
 	}
 
-	tmpl, err := template.ParseFiles(filepath.Join(h.staticDir, "done.html"))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if err := tmpl.Execute(w, data); err != nil {
-		fmt.Printf("template error: %v\n", err)
-	}
+	h.renderTemplate(w, "done.html", data)
 }
 
 func (h *handler) renderNoCards(w http.ResponseWriter) {
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hashcards</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<div class="finished">
-  <h1>No cards due today.</h1>
-  <div class="shutdown-container">
-    <a href="/" class="button home-button" style="display:inline-block;text-decoration:none;" title="Return home">
-      Return home
-    </a>
-  </div>
-</div>
-</body>
-</html>`)
+	h.renderTemplate(w, "no_cards.html", struct{}{})
+}
+
+// -------------------------------------------------------------------------
+// macrosJS
+// -------------------------------------------------------------------------
+
+// macrosJS returns a JavaScript snippet that initialises the KaTeX MACROS object.
+func (h *handler) macrosJS() template.JS {
+	var sb strings.Builder
+	sb.WriteString("var MACROS = {};\n")
+	for _, m := range h.macros {
+		name := escapeJSString(m[0])
+		def := escapeJSString(m[1])
+		sb.WriteString(fmt.Sprintf("MACROS['%s'] = '%s';\n", name, def))
+	}
+	return template.JS(sb.String())
+}
+
+func escapeJSString(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, "`", "\\`")
+	s = strings.ReplaceAll(s, "$", "\\$")
+	s = strings.ReplaceAll(s, "'", "\\'")
+	return s
 }
 
 // -------------------------------------------------------------------------

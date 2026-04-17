@@ -1,13 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hashcards</title>
-<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+{{define "content"}}
 <div class="finished">
   <h1>Session Completed 🎉</h1>
   <div class="summary">Reviewed {{.Reviewed}} cards in {{.DurationSec}} seconds.</div>
@@ -28,5 +19,4 @@
     </a>
   </div>
 </div>
-</body>
-</html>
+{{end}}

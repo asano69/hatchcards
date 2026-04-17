@@ -36,14 +36,17 @@ type State struct {
 	Revealed bool
 	// Finished is set when all cards have been graded and the session is saved.
 	Finished bool
+	// fsrsCfg holds the scheduling parameters for this session.
+	fsrsCfg fsrs.FSRSConfig
 }
 
 // New creates a State from a shuffled due-card list.
-func New(due []collection.DueCard, r *rng.TinyRng) *State {
+func New(due []collection.DueCard, r *rng.TinyRng, fsrsCfg fsrs.FSRSConfig) *State {
 	shuffled := rng.Shuffle(due, r)
 	return &State{
 		StartedAt: types.Now(),
 		Queue:     shuffled,
+		fsrsCfg:   fsrsCfg,
 	}
 }
 
@@ -89,7 +92,6 @@ func shouldRepeat(grade fsrs.Grade) bool {
 
 // Grade records a grade for the current card and advances the queue.
 // It returns the updated performance and whether the operation succeeded.
-// The queue must be non-empty and the card must have been revealed.
 func (s *State) Grade(grade fsrs.Grade) (types.ReviewedPerformance, bool) {
 	if len(s.Queue) == 0 {
 		return types.ReviewedPerformance{}, false
@@ -100,7 +102,7 @@ func (s *State) Grade(grade fsrs.Grade) (types.ReviewedPerformance, bool) {
 	s.Revealed = false
 
 	now := types.Now()
-	newPerf := fsrs.UpdatePerformance(dc.Performance, grade, now)
+	newPerf := fsrs.UpdatePerformance(dc.Performance, grade, now, s.fsrsCfg)
 
 	s.Done = append(s.Done, CompletedReview{
 		Card:                dc.Card,
@@ -110,7 +112,6 @@ func (s *State) Grade(grade fsrs.Grade) (types.ReviewedPerformance, bool) {
 		OriginalPerformance: dc.Performance,
 	})
 
-	// Re-queue at the end so the user sees the card again this session.
 	if shouldRepeat(grade) {
 		s.Queue = append(s.Queue, dc)
 	}
@@ -127,12 +128,10 @@ func (s *State) Undo() bool {
 	last := s.Done[len(s.Done)-1]
 	s.Done = s.Done[:len(s.Done)-1]
 
-	// If the graded card was re-queued (Forgot/Hard), remove it from the tail.
 	if shouldRepeat(last.Grade) {
 		s.Queue = s.Queue[:len(s.Queue)-1]
 	}
 
-	// Restore the card to the front of the queue with its original performance.
 	s.Queue = append([]collection.DueCard{{
 		Card:        last.Card,
 		Performance: last.OriginalPerformance,
