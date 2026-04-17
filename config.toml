@@ -10,7 +10,7 @@ max_interval  = 256.0
 
 # Empty deck = all decks, routed to /drill/
 [[session]]
-deck = ""
+# deck = ""
 
 # Named deck = filtered by deck name, routed to /drill/<sanitized-name>/
 [[session]]
