@@ -1,0 +1,257 @@
+/* =========================================================================
+   Rich text — card body content
+   ========================================================================= */
+
+.rich-text {
+    font-size: 30px;
+    text-align: justify;
+    line-height: 1.4;
+}
+
+.rich-text .cloze-blank {
+    display: inline-block;
+    min-width: 30px;
+    background: var(--color-cloze-hidden);
+    border-radius: var(--radius-md);
+    color: transparent;
+}
+
+.rich-text .cloze-answer {
+    color: var(--color-cloze-reveal);
+}
+
+.rich-text img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-text ul,
+.rich-text ol {
+    padding-left: var(--space-lg);
+}
+
+.rich-text p,
+.rich-text img,
+.rich-text ol,
+.rich-text ul,
+.rich-text blockquote,
+.rich-text table,
+.rich-text pre {
+    margin-bottom: var(--space-md);
+}
+
+.rich-text p:last-child,
+.rich-text img:last-child,
+.rich-text ol:last-child,
+.rich-text ul:last-child,
+.rich-text blockquote:last-child,
+.rich-text table:last-child,
+.rich-text pre:last-child {
+    margin-bottom: 0;
+}
+
+.rich-text blockquote {
+    background: var(--color-surface-raised);
+    border-left: 4px solid var(--color-border-subtle);
+    padding: var(--space-sm) var(--space-md);
+}
+
+/* Tables */
+.rich-text table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.65em;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.rich-text table th,
+.rich-text table td {
+    border: 1px solid var(--color-border-faint);
+    padding: 10px 14px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.rich-text table th {
+    background: var(--color-surface-raised);
+    font-weight: 600;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.rich-text table tbody tr:nth-child(odd)  { background: var(--color-card); }
+.rich-text table tbody tr:nth-child(even) { background: var(--color-surface); }
+
+/* Code */
+.rich-text code {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-faint);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.70em;
+    color: inherit;
+}
+
+.rich-text pre {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-faint);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    overflow-x: auto;
+    font-size: 0.70em;
+    line-height: 1.5;
+}
+
+.rich-text pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.rich-text audio {
+    width: 100%;
+}
+
+.rich-text .katex {
+    font-size: 1em;
+}
+
+/* =========================================================================
+   Controls — form buttons at the bottom of the drill UI
+   ========================================================================= */
+
+.root .controls {
+    flex-shrink: 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+}
+
+/* Shared input/button base */
+.root .controls form input,
+.root .controls form button {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-btn-bg);
+    border: 1px solid var(--color-btn-border);
+    color: var(--color-btn-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+}
+
+.root .controls form input:hover {
+    background: var(--color-btn-hover-bg);
+    border-color: var(--color-btn-hover-border);
+    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
+}
+
+.root .controls form input:active {
+    background: var(--color-btn-active-bg);
+    border-color: var(--color-btn-active-border);
+    box-shadow: var(--color-btn-shadow) 0 0 2px 0;
+}
+
+.root .controls form input:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* ---- Desktop controls layout ---- */
+
+@media (min-width: 769px) {
+    .root .controls {
+        padding: var(--space-xl);
+    }
+
+    .root .controls form {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .root .controls form .spacer {
+        flex: 1;
+    }
+
+    .root .controls form input {
+        padding: 7px 12px;
+        margin: 0 var(--space-md);
+    }
+
+    .grades {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-sm);
+    }
+}
+
+/* ---- Mobile controls layout ---- */
+
+@media (max-width: 768px) {
+    .root .controls {
+        padding: var(--space-md) var(--space-sm);
+    }
+
+    .root .controls form {
+        display: grid;
+        /* Row 1: grade buttons (or reveal); Row 2: undo + end */
+        grid-template-areas:
+            "main  main  main  main"
+            "undo  .     .     end";
+        grid-template-columns: auto 1fr 1fr auto;
+        gap: var(--space-sm);
+        align-items: center;
+    }
+
+    /* Grades / reveal occupy the full top row */
+    .grades,
+    #reveal {
+        grid-area: main;
+    }
+
+    #undo { grid-area: undo; }
+    #end  { grid-area: end; }
+
+    /* Spacers are not needed in grid layout */
+    .root .controls form .spacer {
+        display: none;
+    }
+
+    .root .controls form input {
+        padding: 9px 10px;
+        font-size: 15px;
+    }
+
+    /* Grade buttons row */
+    .grades {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-xs);
+    }
+
+    .grades input {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 4px;
+        font-size: 14px;
+    }
+
+    /* Reveal button spans full width */
+    #reveal {
+        display: block;
+        width: 100%;
+        padding: 9px;
+    }
+}

@@ -1,4 +1,4 @@
-{{define "head_extra"}}<noscript><style>.card-content { opacity: 1; }</style></noscript>{{end}}
+{{define "head_extra"}}<noscript><style>.card-content { opacity: 1 !important; }</style></noscript>{{end}}
 
 {{define "content"}}
 <div class="root">
@@ -7,6 +7,7 @@
       <div class="progress-fill" style="width: {{.ProgressPct}}%;"></div>
     </div>
   </div>
+
   <div class="card-container">
     <div class="card">
       <div class="card-header"><h1>{{.DeckName}}</h1></div>
@@ -15,6 +16,7 @@
       </div>
     </div>
   </div>
+
   <div class="controls">
     <form action="{{.BasePath}}" method="post">
       {{if .CanUndo}}
@@ -22,23 +24,27 @@
       {{else}}
         <input id="undo" type="submit" name="action" value="Undo" disabled>
       {{end}}
+
       <div class="spacer"></div>
+
       {{if .Revealed}}
         <div class="grades">
           {{if eq .AnswerControls "binary"}}
             <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
             <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
           {{else}}
-            <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
-            <input id="hard"   type="submit" name="action" value="Hard"   title="Mark card as difficult. Shortcut: 2.">
-            <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
-            <input id="easy"   type="submit" name="action" value="Easy"   title="Mark card as very easy. Shortcut: 4.">
+            <input id="forgot" type="submit" name="action" value="Forgot" title="Forgot. Shortcut: 1.">
+            <input id="hard"   type="submit" name="action" value="Hard"   title="Hard. Shortcut: 2.">
+            <input id="good"   type="submit" name="action" value="Good"   title="Good. Shortcut: 3.">
+            <input id="easy"   type="submit" name="action" value="Easy"   title="Easy. Shortcut: 4.">
           {{end}}
         </div>
       {{else}}
         <input id="reveal" type="submit" name="action" value="Reveal" title="Show the answer. Shortcut: space.">
       {{end}}
+
       <div class="spacer"></div>
+
       <input id="end" type="submit" name="action" value="End" title="End the session (changes are saved)">
     </form>
   </div>

@@ -1,0 +1,109 @@
+/* =========================================================================
+   Design tokens — all theme values live here.
+   Every other stylesheet consumes these via var().
+   ========================================================================= */
+
+:root {
+    /* Typography */
+    --font-sans:  system-ui, "Inter", -apple-system, sans-serif;
+    --font-serif: "TeX Gyre Termes", "Nimbus Roman No9 L", Georgia, serif;
+    --font-mono:  "Menlo", "Consolas", "Monaco", "Courier New", monospace;
+
+    /* Palette — light mode */
+    --color-bg:            #ffffff;
+    --color-surface:       #fcfcfc;
+    --color-surface-raised:#f8f8f8;
+    --color-card:          #ffffff;
+    --color-border:        #000000;
+    --color-border-subtle: #999999;
+    --color-border-faint:  #dddddd;
+    --color-text:          #000000;
+    --color-text-muted:    #888888;
+
+    /* Accent colours */
+    --color-progress:      palegreen;
+    --color-cloze-hidden:  #a0a0a0;
+    --color-cloze-reveal:  royalblue;
+
+    /* Button colours */
+    --color-btn-bg:        #ffffff;
+    --color-btn-border:    #999999;
+    --color-btn-text:      #000000;
+    --color-btn-shadow:    #cccccc;
+    --color-btn-hover-bg:  #f0f0f0;
+    --color-btn-hover-border: #777777;
+    --color-btn-active-bg: #e4e4e4;
+    --color-btn-active-border: #666666;
+
+    /* Destructive / action buttons */
+    --color-btn-reset-bg:     #dc3545;
+    --color-btn-reset-border: #c82333;
+    --color-btn-reset-text:   #ffffff;
+    --color-btn-reset-shadow: rgba(220, 53, 69, 0.30);
+    --color-btn-reset-hover:  #c82333;
+
+    --color-btn-home-bg:      #007bff;
+    --color-btn-home-border:  #0069d9;
+    --color-btn-home-text:    #ffffff;
+    --color-btn-home-shadow:  rgba(0, 123, 255, 0.30);
+    --color-btn-home-hover:   #0069d9;
+
+    /* Spacing */
+    --space-xs:  4px;
+    --space-sm:  8px;
+    --space-md:  12px;
+    --space-lg:  24px;
+    --space-xl:  32px;
+    --space-2xl: 48px;
+
+    /* Layout */
+    --card-width-desktop: 900px;
+    --card-min-height:    400px;
+    --card-max-height:    90%;
+    --progress-bar-width: 300px;
+    --progress-bar-height:24px;
+
+    /* Misc */
+    --radius-sm:   3px;
+    --radius-md:   6px;
+    --radius-pill: 12px;
+    --shadow-card: 0px 0px 48px 16px #dddddd;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-bg:            #1a1a1a;
+        --color-surface:       #1e1e1e;
+        --color-surface-raised:#252525;
+        --color-card:          #2d2d2d;
+        --color-border:        #444444;
+        --color-border-subtle: #555555;
+        --color-border-faint:  #444444;
+        --color-text:          #e0e0e0;
+        --color-text-muted:    #888888;
+
+        --color-progress:      #2a6e2a;
+        --color-cloze-hidden:  #555555;
+
+        --color-btn-bg:           #333333;
+        --color-btn-border:       #555555;
+        --color-btn-text:         #e0e0e0;
+        --color-btn-shadow:       #111111;
+        --color-btn-hover-bg:     #3a3a3a;
+        --color-btn-hover-border: #666666;
+        --color-btn-active-bg:    #404040;
+
+        --color-btn-reset-bg:     #9b2030;
+        --color-btn-reset-border: #7d1a28;
+        --color-btn-reset-shadow: rgba(155, 32, 48, 0.40);
+        --color-btn-reset-hover:  #7d1a28;
+
+        --color-btn-home-bg:      #0056b3;
+        --color-btn-home-border:  #004494;
+        --color-btn-home-shadow:  rgba(0, 86, 179, 0.40);
+        --color-btn-home-hover:   #004494;
+
+        --shadow-card: 0px 0px 48px 16px #111111;
+    }
+}

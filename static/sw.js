@@ -1,9 +1,17 @@
 // hashcards service worker — cache-first for static assets, network-first for pages.
-const CACHE = "hashcards-v2";
+const CACHE = "hashcards-v3";
 const PRECACHE = [
-  "/static/style.css",
+  "/static/css/tokens.css",
+  "/static/css/base.css",
+  "/static/css/index.css",
+  "/static/css/drill.css",
+  "/static/css/components.css",
+  "/static/css/done.css",
   "/static/script.js",
-  "/static/icon.svg",
+  "/static/icons/icon-192.png",
+  "/static/icons/icon-512.png",
+  "/static/icons/icon-192-maskable.png",
+  "/static/icons/icon-512-maskable.png",
 ];
 
 self.addEventListener("install", e => {
@@ -14,7 +22,7 @@ self.addEventListener("install", e => {
 });
 
 self.addEventListener("activate", e => {
-  // Remove any caches from previous versions.
+  // Remove caches from previous versions.
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -45,6 +53,5 @@ self.addEventListener("fetch", e => {
     return;
   }
 
-  // For all other requests (pages, API, file serving) go to the network.
-  // This ensures card content and session state are always fresh.
+  // All other requests (pages, API, file serving) go to the network.
 });

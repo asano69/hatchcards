@@ -1,0 +1,25 @@
+/* =========================================================================
+   Base — resets and foundational styles
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-weight: normal;
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--font-serif);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
