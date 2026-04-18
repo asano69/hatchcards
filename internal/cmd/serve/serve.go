@@ -60,13 +60,24 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	staticFS := http.FileServer(http.Dir(staticDir))
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", staticFS))
 
+	// Serve KaTeX assets under /katex/ so that the URLs embedded in
+	// katex.min.css (which reference /katex/fonts/...) resolve correctly.
+	katexFS := http.FileServer(http.Dir(filepath.Join(staticDir, "katex")))
+	router.PathPrefix("/katex/").Handler(http.StripPrefix("/katex/", katexFS))
+
 	// Serve PWA and root-level files directly from the static directory.
-	for _, f := range []string{"manifest.json", "sw.js", "favicon.svg", "favicon.ico"} {
+	for _, f := range []string{"manifest.json", "sw.js", "favicon.svg"} {
 		f := f
 		router.HandleFunc("/"+f, func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(staticDir, f))
 		})
 	}
+
+	// Redirect /favicon.ico to the SVG icon so that browsers (e.g. Firefox)
+	// that unconditionally request favicon.ico do not receive a 404.
+	router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
+	})
 
 	// /api/sessions returns the session list as JSON for backward compatibility.
 	sessionInfos := buildSessionList(cfg)
@@ -183,6 +194,14 @@ func registerDrillRoute(
 	if burySiblings {
 		due = handlers.BurySiblings(due)
 	}
+
+	// Log session startup information.
+	deckLabel := "all decks"
+	if sc.FromDeck != "" {
+		deckLabel = fmt.Sprintf("deck=%q", sc.FromDeck)
+	}
+	fmt.Printf("[session] name=%q path=%q %s cards=%d\n",
+		sc.Name, mountPath, deckLabel, len(due))
 
 	r := rng.FromSeed(uint64(time.Now().UnixNano()))
 	sess := drillstate.New(due, r, fsrsCfg)

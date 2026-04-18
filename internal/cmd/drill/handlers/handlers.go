@@ -49,6 +49,16 @@ var mimeTypes = map[string]string{
 	".webm": "video/webm",
 }
 
+// shortHash returns the first 7 characters of a card hash hex string,
+// matching the convention used by git and similar tools.
+func shortHash(h types.CardHash) string {
+	s := h.Hex()
+	if len(s) > 7 {
+		return s[:7]
+	}
+	return s
+}
+
 // FilterDue applies card-limit, new-card-limit, and deck-filter to a due list.
 func FilterDue(due []collection.DueCard, cardLimit *int, newCardLimit *int, deckFilter *string) []collection.DueCard {
 	if deckFilter != nil {
@@ -246,15 +256,28 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 	case "Forgot", "Hard", "Good", "Easy":
 		if !h.sess.IsFinished() && h.sess.Revealed {
 			grade := actionToGrade(action)
+
+			// Capture the current card's performance before grading so we
+			// can log the before/after delta.
+			var beforeStability, beforeDifficulty float64
+			var beforeInterval int64
+			if dc, ok := h.sess.Current(); ok {
+				if rp := dc.Performance.Reviewed(); rp != nil {
+					beforeStability = rp.Stability
+					beforeDifficulty = rp.Difficulty
+					beforeInterval = rp.IntervalDays
+				}
+			}
+
 			newPerf, ok := h.sess.Grade(grade)
 			if ok {
 				last := h.sess.Done[len(h.sess.Done)-1]
-				fmt.Printf("[debug] hash=%s grade=%s stability=%.2f difficulty=%.2f interval=%d due=%s\n",
-					last.Card.Hash(),
+				fmt.Printf("[grade] hash=%s grade=%s | stability %.2f→%.2f | difficulty %.2f→%.2f | interval %dd→%dd | due=%s\n",
+					shortHash(last.Card.Hash()),
 					action,
-					newPerf.Stability,
-					newPerf.Difficulty,
-					newPerf.IntervalDays,
+					beforeStability, newPerf.Stability,
+					beforeDifficulty, newPerf.Difficulty,
+					beforeInterval, newPerf.IntervalDays,
 					newPerf.DueDate.String(),
 				)
 			}
@@ -279,14 +302,18 @@ func (h *handler) finishSession() {
 		types.NewTimestamp(h.endedAt),
 		h.sess.ToReviewRecords(),
 	); err != nil {
-		fmt.Printf("warning: save session: %v\n", err)
+		fmt.Printf("[session] warning: save session: %v\n", err)
+		return
 	}
+	fmt.Printf("[session] saved: %d review(s) written to database\n", len(h.sess.Done))
+
 	for _, cr := range h.sess.Done {
 		if err := h.db.UpdateCardPerformance(
 			cr.Card.Hash(),
 			types.ReviewedCardPerformance(cr.Performance),
 		); err != nil {
-			fmt.Printf("warning: update card performance: %v\n", err)
+			fmt.Printf("[session] warning: update card performance hash=%s: %v\n",
+				shortHash(cr.Card.Hash()), err)
 		}
 	}
 }
@@ -295,12 +322,12 @@ func (h *handler) finishSession() {
 func (h *handler) resetSession() {
 	col, err := collection.Load(h.collectionRoot, h.db)
 	if err != nil {
-		fmt.Printf("warning: reset session load: %v\n", err)
+		fmt.Printf("[session] warning: reset session load: %v\n", err)
 		return
 	}
 	due, err := col.DueToday(types.Today())
 	if err != nil {
-		fmt.Printf("warning: reset session due today: %v\n", err)
+		fmt.Printf("[session] warning: reset session due today: %v\n", err)
 		return
 	}
 	due = FilterDue(due, h.cardLimit, h.newCardLimit, h.deckFilter)
@@ -312,6 +339,8 @@ func (h *handler) resetSession() {
 	h.cache = drillcache.Build(due, h.mountPath)
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
+
+	fmt.Printf("[session] reset: %d card(s) due\n", len(due))
 }
 
 func actionToGrade(action string) fsrs.Grade {

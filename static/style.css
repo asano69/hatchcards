@@ -1,10 +1,6 @@
-/* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
-
 :root {
-    --font-sans: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
-    --font-serif: "TeX Gyre Termes", "Nimbus Roman No9 L", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-serif: "TeX Gyre Termes", "Nimbus Roman No9 L", Georgia, serif;
     --font-mono: "Menlo", "Consolas", "Monaco", "Courier New", monospace;
 }
 
