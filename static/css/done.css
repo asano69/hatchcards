@@ -6,6 +6,8 @@
     padding: var(--space-2xl);
     overflow-y: auto;
     height: 100vh;
+    /* Allow scrolling on this page (base.css sets overflow: hidden on body) */
+    overscroll-behavior-y: contain;
 }
 
 .finished h1 {
@@ -55,6 +57,8 @@
 
 .shutdown-container {
     margin-top: var(--space-2xl);
+    /* Extra space above the iOS home bar */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     text-align: center;
     display: flex;
     gap: var(--space-md);
@@ -110,6 +114,7 @@
 @media (max-width: 768px) {
     .finished {
         padding: var(--space-lg);
+        padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
     }
 
     .finished h1 {

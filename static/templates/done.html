@@ -11,10 +11,12 @@
     </table>
   </div>
   <div class="shutdown-container">
-    <form action="{{.BasePath}}" method="post" style="display:inline-block;margin-right:16px;">
-      <input class="button reset-button" type="submit" name="action" value="Reset" title="Start a new session for today">
+    <form action="{{.BasePath}}" method="post">
+      <button class="action-btn reset-btn" type="submit" name="action" value="Reset" title="Start a new session for today">
+        Reset
+      </button>
     </form>
-    <a href="/" class="button home-button" style="display:inline-block;text-decoration:none;" title="Return home">
+    <a href="/" class="action-btn home-btn" title="Return home">
       Return home
     </a>
   </div>

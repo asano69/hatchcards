@@ -255,3 +255,63 @@
         padding: 9px;
     }
 }
+/* ---- Mobile controls layout ---- */
+
+@media (max-width: 768px) {
+    .root .controls {
+        padding: var(--space-md) var(--space-sm);
+        /* Keep buttons above the iOS home bar / Android gesture area */
+        padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .root .controls form {
+        display: grid;
+        /* Row 1: grade buttons (or reveal); Row 2: undo + end */
+        grid-template-areas:
+            "main  main  main  main"
+            "undo  .     .     end";
+        grid-template-columns: auto 1fr 1fr auto;
+        gap: var(--space-sm);
+        align-items: center;
+    }
+
+    /* Grades / reveal occupy the full top row */
+    .grades,
+    #reveal {
+        grid-area: main;
+    }
+
+    #undo { grid-area: undo; }
+    #end  { grid-area: end; }
+
+    /* Spacers are not needed in grid layout */
+    .root .controls form .spacer {
+        display: none;
+    }
+
+    .root .controls form input {
+        padding: 9px 10px;
+        font-size: 15px;
+    }
+
+    /* Grade buttons row */
+    .grades {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-xs);
+    }
+
+    .grades input {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 4px;
+        font-size: 14px;
+    }
+
+    /* Reveal button spans full width */
+    #reveal {
+        display: block;
+        width: 100%;
+        padding: 9px;
+    }
+}
