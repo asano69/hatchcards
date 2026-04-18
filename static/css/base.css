@@ -14,8 +14,21 @@
 html,
 body {
     width: 100vw;
-    height: 100vh;
+    /* svh = smallest viewport height (excludes browser chrome).
+       This prevents the page from being taller than the visible area on
+       mobile browsers where 100vh includes the (hideable) address bar.
+       Falls back to 100vh for browsers that do not support svh. */
+    height: 100svh;
+    height: 100vh; /* fallback for very old browsers — placed first so svh overrides it */
     overflow: hidden;
+}
+
+/* Override the height fallback order using cascade — svh wins if supported */
+@supports (height: 100svh) {
+    html,
+    body {
+        height: 100svh;
+    }
 }
 
 body {

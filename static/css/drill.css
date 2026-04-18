@@ -6,7 +6,9 @@
     display: flex;
     flex-direction: column;
     width: 100vw;
-    height: 100vh;
+    /* dvh accounts for browser chrome (address bar, gesture bar) on mobile.
+       Falls back to svh then vh for older browsers. */
+    height: 100dvh;
 }
 
 /* ---- Header ---- */
@@ -71,7 +73,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
+    /* Allow horizontal scroll for wide math; vertical scroll for long content. */
+    overflow-x: auto;
     overflow-y: auto;
     opacity: 0;
     min-height: 0;
