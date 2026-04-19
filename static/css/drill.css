@@ -100,7 +100,11 @@ noscript .root .card-container .card .card-content {
 .root .card-container .card .card-content .answer,
 .root .card-container .card .card-content .prompt {
     padding: var(--space-md);
+    /* min-width: 100% ensures the element fills the card when content is narrow.
+       width: max-content lets it expand past the card width when content overflows,
+       so that border-bottom stretches with the content instead of clipping. */
     min-width: 100%;
+    width: max-content;
 }
 
 .root .card-container .card .card-content .question {
