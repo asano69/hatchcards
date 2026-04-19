@@ -9,7 +9,7 @@
 //	Easy    — grade the card and advance
 //	Undo    — reverse the most recent grade
 //	End     — end the session early (saves progress)
-//	Reset   — save current session and start a new one
+//	ReturnHome   — save current session and start a new one
 package handlers
 
 import (
@@ -249,9 +249,11 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 	case "End":
 		h.finishSession()
 
-	case "Reset":
+	case "ReturnHome":
 		h.finishSession()
 		h.resetSession()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
 
 	case "Forgot", "Hard", "Good", "Easy":
 		if !h.sess.IsFinished() && h.sess.Revealed {

@@ -14,6 +14,8 @@ reset:
 
 .PHONY: serve
 serve:
+	rm -fr ./data
+	mkdir -p ./data
 	./hashcards serve --config=config.toml
 
 

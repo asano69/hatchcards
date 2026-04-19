@@ -190,7 +190,7 @@
 
 @media (min-width: 769px) {
     .root .controls {
-        padding: var(--space-xl);
+        padding: var(--space-md);
     }
 
     .root .controls form {

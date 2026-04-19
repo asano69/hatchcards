@@ -18,7 +18,7 @@
 
 .root .header {
     flex-shrink: 0;
-    padding: var(--space-xl);
+    padding: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     background: var(--color-surface-raised);
     display: flex;
@@ -64,11 +64,11 @@
 .root .card-container .card .card-header {
     flex-shrink: 0;
     border-bottom: 1px solid var(--color-border);
-    padding: var(--space-lg);
+    padding: var(--space-md);
 }
 
 .root .card-container .card .card-header h1 {
-    font-size: 36px;
+    font-size: 30px;
 }
 
 /* card-content fades in after KaTeX renders (opacity toggled by script.js) */
@@ -90,7 +90,7 @@ noscript .root .card-container .card .card-content {
 .root .card-container .card .card-content .question,
 .root .card-container .card .card-content .answer,
 .root .card-container .card .card-content .prompt {
-    padding: var(--space-lg);
+    padding: var(--space-md);
     min-width: 100%;
 }
 
