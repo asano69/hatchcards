@@ -110,7 +110,7 @@ noscript .root .card-container .card .card-content {
        width: max-content lets it expand past the card width when content overflows,
        so that border-bottom stretches with the content instead of clipping. */
     min-width: 100%;
-    width: max-content;
+    /* width: max-content; */
 }
 
 .root .card-container .card .card-content .question {
