@@ -88,6 +88,7 @@ noscript .root .card-container .card .card-content {
 .root .card-container .card .card-content .answer,
 .root .card-container .card .card-content .prompt {
     padding: var(--space-lg);
+    min-width: 100%;
 }
 
 .root .card-container .card .card-content .question {
