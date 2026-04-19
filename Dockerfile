@@ -22,6 +22,8 @@ RUN addgroup -g 1000 hashcards && \
 COPY --from=go-builder /build/hashcards /usr/local/bin/hashcards
 COPY static/ /hashcards/static/
 
+RUN mkdir -p /hashcards/data
+
 RUN chown -R 1000:1000 /hashcards
 USER 1000:1000
 

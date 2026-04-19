@@ -1,11 +1,10 @@
 // hashcards service worker — cache-first for static assets, network-first for pages.
-const CACHE = "hashcards-v3";
+const CACHE = "hashcards-v4;"
 const PRECACHE = [
   "/static/css/tokens.css",
   "/static/css/base.css",
   "/static/css/index.css",
   "/static/css/drill.css",
-  "/static/css/components.css",
   "/static/css/done.css",
   "/static/script.js",
   "/static/icons/icon-192.png",

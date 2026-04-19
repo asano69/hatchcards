@@ -1,16 +1,17 @@
 /* =========================================================================
-   Drill — card container, header, and progress bar
+   Drill page — layout, rich text, and buttons.
+   (Merged from former drill.css and components.css.)
    ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   Root layout
+   ------------------------------------------------------------------------- */
 
 .root {
     display: flex;
     flex-direction: column;
     width: 100vw;
-    /* Use 100% so .root inherits body's height (100svh defined in base.css).
-       Using 100dvh here caused .root to overflow body in PWA standalone mode,
-       because body is clipped at 100svh while 100dvh equals the full screen
-       height including the home indicator area — the bottom controls were then
-       silently cut off by body's overflow:hidden. */
+    /* Inherit the svh-aware height set on body in base.css. */
     height: 100%;
 }
 
@@ -21,8 +22,7 @@
     padding: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     background: var(--color-surface-raised);
-    /* Use relative positioning so the reset button can be placed absolutely
-       on the left while the progress bar remains centred. */
+    /* Relative so the reset form can be anchored to the left edge. */
     position: relative;
     display: flex;
     justify-content: center;
@@ -44,44 +44,12 @@
     transition: width 0.3s ease;
 }
 
-/* Reset button — anchored to the left edge of the header */
 .reset-form {
     position: absolute;
     left: var(--space-md);
     display: flex;
     align-items: center;
-
 }
-
-.reset-btn {
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--color-btn-bg);
-    border: 1px solid var(--color-btn-border);
-    color: var(--color-btn-text);
-    font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
-    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-    white-space: nowrap;
-    touch-action: manipulation;
-    padding: var(--space-sm);
-}
-
-.reset-btn:hover {
-    background: var(--color-btn-hover-bg);
-    border-color: var(--color-btn-hover-border);
-    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
-}
-.reset-btn:active {
-    background: var(--color-btn-active-bg);
-    border-color: var(--color-btn-active-border);
-    box-shadow: var(--color-btn-shadow) 0 0 2px 0;
-}
-
 
 /* ---- Card container ---- */
 
@@ -113,12 +81,11 @@
     font-size: 30px;
 }
 
-/* card-content fades in after KaTeX renders (opacity toggled by script.js) */
+/* Fades in after KaTeX renders; toggled by script.js. */
 .root .card-container .card .card-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    /* Allow horizontal scroll for wide math; vertical scroll for long content. */
     overflow-x: auto;
     overflow-y: auto;
     opacity: 0;
@@ -144,7 +111,198 @@ noscript .root .card-container .card .card-content {
     min-height: 30px;
 }
 
-/* ---- Desktop card sizing ---- */
+/* ---- Controls container ---- */
+
+.root .controls {
+    flex-shrink: 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+}
+
+/* -------------------------------------------------------------------------
+   Buttons — unified style for every drill-page button
+   (header Reset + control-bar inputs share identical visual treatment)
+   ------------------------------------------------------------------------- */
+
+.root .controls form input,
+.root .controls form button,
+.reset-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-btn-bg);
+    border: 1px solid var(--color-btn-border);
+    color: var(--color-btn-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+}
+
+.root .controls form input:hover,
+.reset-btn:hover {
+    background: var(--color-btn-hover-bg);
+    border-color: var(--color-btn-hover-border);
+    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
+}
+
+.root .controls form input:active,
+.reset-btn:active {
+    background: var(--color-btn-active-bg);
+    border-color: var(--color-btn-active-border);
+    box-shadow: var(--color-btn-shadow) 0 0 2px 0;
+}
+
+.root .controls form input:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* -------------------------------------------------------------------------
+   Rich text — card body content
+   ------------------------------------------------------------------------- */
+
+.rich-text {
+    font-size: 30px;
+    text-align: justify;
+    line-height: 1.4;
+}
+
+.rich-text .cloze-blank {
+    display: inline-block;
+    min-width: 30px;
+    background: var(--color-cloze-hidden);
+    border-radius: var(--radius-md);
+    color: transparent;
+}
+
+.rich-text .cloze-answer {
+    color: var(--color-cloze-reveal);
+}
+
+.rich-text img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.rich-text ul,
+.rich-text ol {
+    padding-left: var(--space-lg);
+}
+
+/* Vertical rhythm between block elements */
+.rich-text p,
+.rich-text img,
+.rich-text ol,
+.rich-text ul,
+.rich-text blockquote,
+.rich-text table,
+.rich-text pre {
+    margin-bottom: var(--space-md);
+}
+
+.rich-text p:last-child,
+.rich-text img:last-child,
+.rich-text ol:last-child,
+.rich-text ul:last-child,
+.rich-text blockquote:last-child,
+.rich-text table:last-child,
+.rich-text pre:last-child {
+    margin-bottom: 0;
+}
+
+.rich-text blockquote {
+    background: var(--color-surface-raised);
+    border-left: 4px solid var(--color-border-subtle);
+    padding: var(--space-sm) var(--space-md);
+}
+
+.rich-text table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.65em;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.rich-text table th,
+.rich-text table td {
+    border: 1px solid var(--color-border-faint);
+    padding: 10px 14px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.rich-text table th {
+    background: var(--color-surface-raised);
+    font-weight: 600;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.rich-text table tbody tr:nth-child(odd)  { background: var(--color-card); }
+.rich-text table tbody tr:nth-child(even) { background: var(--color-surface); }
+
+.rich-text code {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-faint);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.70em;
+    color: inherit;
+}
+
+.rich-text pre {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-faint);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    overflow-x: auto;
+    font-size: 0.70em;
+    line-height: 1.5;
+}
+
+.rich-text pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.rich-text audio {
+    width: 100%;
+}
+
+/* Keep KaTeX glyphs at the same optical size as surrounding text. */
+.rich-text .katex {
+    font-size: 1em;
+}
+
+/* Allow display math to scroll horizontally instead of clipping. */
+.rich-text .katex-display,
+.rich-text .math.math-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+}
+
+.rich-text .math.math-inline {
+    display: inline-block;
+    max-width: 100%;
+}
+
+/* -------------------------------------------------------------------------
+   Desktop layout  (≥ 769px)
+   ------------------------------------------------------------------------- */
 
 @media (min-width: 769px) {
     .root .card-container .card {
@@ -153,18 +311,47 @@ noscript .root .card-container .card .card-content {
         max-height: var(--card-max-height);
         box-shadow: var(--shadow-card);
     }
+
+    .root .controls {
+        padding: var(--space-md);
+    }
+
+    .root .controls form {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .root .controls form .spacer { flex: 1; }
+
+    .root .controls form input {
+        padding: 7px 12px;
+        margin: 0 var(--space-md);
+    }
+
+    .reset-btn {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .grades {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-sm);
+    }
 }
 
-/* ---- Mobile card sizing ---- */
+/* -------------------------------------------------------------------------
+   Mobile layout  (≤ 768px)
+   ------------------------------------------------------------------------- */
 
 @media (max-width: 768px) {
-    .root .header {
-        padding: var(--space-md);
+    .rich-text {
+        font-size: 22px;
     }
 
     .root .header .progress-bar {
         width: 100%;
-        max-width: 300px;
+        max-width: 200px;
     }
 
     .root .card-container .card {
@@ -175,7 +362,69 @@ noscript .root .card-container .card .card-content {
         border-right: none;
     }
 
+    .root .controls {
+        padding: var(--space-md) var(--space-sm);
+        /* Extra clearance for the iOS home indicator and Android gesture bar. */
+        padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .root .controls form {
+        display: grid;
+        grid-template-areas:
+            "main  main  main  main"
+            "undo  .     .     end";
+        grid-template-columns: auto 1fr 1fr auto;
+        grid-template-rows: auto auto;
+        gap: var(--space-sm);
+        align-items: center;
+    }
+
+    /* Grade buttons / reveal button span the full top row. */
+    .grades,
+    #reveal    { grid-area: main; }
+    #undo      { grid-area: undo; }
+    #end       { grid-area: end; }
+
+    /* Spacers are unused in grid layout. */
+    .root .controls form .spacer { display: none; }
+
+    .root .controls form input {
+        padding: 9px 10px;
+        font-size: 15px;
+    }
+
     .reset-btn {
-        font-size: 16px;
+        padding: var(--space-sm);
+        font-size: 15px;
+    }
+
+    .grades {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-xs);
+    }
+
+    .grades input {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 4px;
+        font-size: 14px;
+    }
+
+    #reveal {
+        display: block;
+        width: 100%;
+        padding: 9px;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   Mobile PWA (standalone) — slightly smaller card text to maximise
+   readable content in the constrained viewport without browser chrome.
+   ------------------------------------------------------------------------- */
+
+@media (display-mode: standalone) and (max-width: 768px) {
+    .rich-text {
+        font-size: 18px;
     }
 }
