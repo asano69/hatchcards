@@ -13,6 +13,7 @@
     width: 100vw;
     /* Inherit the svh-aware height set on body in base.css. */
     height: 100%;
+
 }
 
 /* ---- Header ---- */
@@ -30,12 +31,15 @@
 }
 
 .root .header .progress-bar {
+
     width: var(--progress-bar-width);
     height: var(--progress-bar-height);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-pill);
     background: var(--color-card);
     overflow: hidden;
+
+
 }
 
 .root .header .progress-bar .progress-fill {
@@ -45,6 +49,7 @@
 }
 
 .reset-form {
+    padding: var(--space-sm);
     position: absolute;
     left: var(--space-md);
     display: flex;
@@ -78,7 +83,7 @@
 }
 
 .root .card-container .card .card-header h1 {
-    font-size: 30px;
+    font-size: 36px;
 }
 
 /* Fades in after KaTeX renders; toggled by script.js. */
@@ -90,6 +95,7 @@
     overflow-y: auto;
     opacity: 0;
     min-height: 0;
+
 }
 
 noscript .root .card-container .card .card-content {
@@ -121,6 +127,8 @@ noscript .root .card-container .card .card-content {
     flex-shrink: 0;
     border-top: 1px solid var(--color-border);
     background: var(--color-surface-raised);
+
+
 }
 
 /* -------------------------------------------------------------------------
@@ -145,6 +153,7 @@ noscript .root .card-container .card .card-content {
     transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
     white-space: nowrap;
     touch-action: manipulation;
+
 }
 
 .root .controls form input:hover,
@@ -317,7 +326,7 @@ noscript .root .card-container .card .card-content {
     }
 
     .root .controls {
-        padding: var(--space-md);
+        padding: var(--space-sm);
     }
 
     .root .controls form {
