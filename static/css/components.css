@@ -220,9 +220,11 @@
 @media (max-width: 768px) {
     .root .controls {
         padding: var(--space-md) var(--space-sm);
-        /* Ensure buttons clear the iOS home indicator and Android gesture bar.
-           env() is supported on all modern mobile browsers. */
-        padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+        /* Add safe-area-inset-bottom on top of normal padding so the second
+           row of buttons always clears the iOS home indicator and the Android
+           gesture bar. Using calc() rather than max() ensures both values
+           contribute rather than the larger one replacing the smaller one. */
+        padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
     }
 
     .root .controls form {
@@ -232,6 +234,9 @@
             "main  main  main  main"
             "undo  .     .     end";
         grid-template-columns: auto 1fr 1fr auto;
+        /* Give each row an explicit minimum height so the second row is never
+           collapsed or pushed outside the viewport. */
+        grid-template-rows: auto auto;
         gap: var(--space-sm);
         align-items: center;
     }
