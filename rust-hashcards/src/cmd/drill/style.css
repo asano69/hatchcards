@@ -83,12 +83,12 @@ body {
                 display: flex;
                 flex-direction: column;
                 overflow-x: hidden;
-                overflow-y: auto;
 
                 .question,
                 .answer,
                 .prompt {
                     padding: 24px;
+                    overflow-y: auto;
                 }
 
                 .question {
@@ -96,7 +96,7 @@ body {
                 }
 
                 .answer {
-                    min-height: 30px;
+                    min-height: 96px;
                 }
 
                 .rich-text {
@@ -122,6 +122,7 @@ body {
                         margin-right: auto;
                         max-width: 100%;
                         height: auto;
+                        max-height: 600px;
                     }
 
                     ul,
@@ -151,7 +152,9 @@ body {
                         border-collapse: collapse;
                         width: 100%;
                         font-size: 0.65em;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                        font-family:
+                            -apple-system, BlinkMacSystemFont, "Segoe UI",
+                            Helvetica, Arial, sans-serif;
                         line-height: 1.6;
                         border: 1px solid #999;
 
@@ -188,7 +191,8 @@ body {
                         border: 1px solid #ddd;
                         padding: 2px 6px;
                         border-radius: 3px;
-                        font-family: "Menlo", "Monaco", "Courier New", monospace;
+                        font-family:
+                            "Menlo", "Monaco", "Courier New", monospace;
                         font-size: 0.7em;
                         color: inherit;
                     }
@@ -459,6 +463,147 @@ body {
 
         .val {
             padding-left: 48px;
+        }
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        color: #e0e0e0;
+        background: #1a1a1a;
+    }
+
+    .root {
+        .header,
+        .controls {
+            background: #252525;
+        }
+
+        .header {
+            border-bottom-color: #444;
+
+            .progress-bar {
+                border-color: #555;
+                background: #333;
+            }
+        }
+
+        .card-container {
+            background: #1e1e1e;
+
+            .card {
+                background: #2a2a2a;
+
+                .card-header {
+                    border-bottom-color: #444;
+                }
+
+                .card-content {
+                    .question {
+                        border-bottom-color: #444;
+                    }
+
+                    .rich-text {
+                        .cloze {
+                            background: #555;
+                        }
+
+                        .cloze-reveal {
+                            color: #6ea8fe;
+                        }
+
+                        blockquote {
+                            background: #333;
+                            border-left-color: #555;
+                        }
+
+                        table {
+                            border-color: #555;
+
+                            th,
+                            td {
+                                border-color: #444;
+                            }
+
+                            th {
+                                background: #383838;
+                                border-color: #555;
+                            }
+
+                            tbody tr:nth-child(odd) {
+                                background: #2a2a2a;
+                            }
+
+                            tbody tr:nth-child(even) {
+                                background: #323232;
+                            }
+
+                            code {
+                                background: #383838;
+                            }
+                        }
+
+                        code {
+                            background: #333;
+                            border-color: #444;
+                        }
+
+                        pre {
+                            background: #333;
+                            border-color: #444;
+                        }
+                    }
+                }
+            }
+        }
+
+        .controls {
+            border-top-color: #444;
+
+            form input {
+                background: #333;
+                border-color: #555;
+                color: #e0e0e0;
+                box-shadow: #111 0px 1px 3px 0px;
+
+                &:hover {
+                    background: #3a3a3a;
+                    border-color: #666;
+                    box-shadow: #111 0px 2px 5px 0px;
+                }
+
+                &:active {
+                    background: #444;
+                    border-color: #777;
+                    box-shadow: #111 0px 0px 2px 0px;
+                }
+
+                &:disabled:hover,
+                &:disabled:active {
+                    background: #333;
+                    border-color: #555;
+                    box-shadow: #111 0px 1px 3px 0px;
+                }
+            }
+        }
+    }
+
+    .finished {
+        h2 {
+            border-bottom-color: #444;
+        }
+
+        .stats table tr {
+            border-bottom-color: #333;
+        }
+    }
+
+    /* Desktop card shadow */
+    @media (min-width: 769px) {
+        .card {
+            box-shadow: 0px 0px 48px 16px #111;
+            border-color: #444;
         }
     }
 }
