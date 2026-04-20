@@ -24,7 +24,13 @@
 
 .session-link {
     display: block;
-    background: var(--color-card);
+    /* --retri-pct is set as an inline style per session by the template.
+       --color-progress is defined in tokens.css and is dark-mode aware. */
+    background: linear-gradient(
+        to right,
+        var(--color-progress) var(--retri-pct, 0%),
+        var(--color-btn-bg)   var(--retri-pct, 0%)
+    );
     border: 1px solid var(--color-border-subtle);
     padding: var(--space-md) var(--space-lg);
     font-size: 24px;
@@ -33,11 +39,15 @@
     color: var(--color-text);
     border-radius: var(--radius-md);
     box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
-    transition: background-color 0.15s, box-shadow 0.15s;
+    transition: background 0.15s, box-shadow 0.15s;
 }
 
 .session-link:hover {
-    background: var(--color-btn-hover-bg);
+    background: linear-gradient(
+        to right,
+        var(--color-progress)      var(--retri-pct, 0%),
+        var(--color-btn-hover-bg)  var(--retri-pct, 0%)
+    );
     box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
 }
 

@@ -4,7 +4,12 @@
     {{if .Sessions}}
     <ul class="session-list">
         {{range .Sessions}}
-        <li><a href="{{.DrillURL}}" class="session-link">{{.Name}}</a></li>
+        <li>
+            <a href="{{.DrillURL}}" class="session-link"
+               style="--retri-pct: {{printf "%.1f" .RetriPct}}%;">
+                {{.Name}}
+            </a>
+        </li>
         {{end}}
     </ul>
     {{else}}

@@ -32,6 +32,10 @@ type sessionInfo struct {
 	Name     string `json:"name"`
 	Path     string `json:"path"`
 	DrillURL string `json:"drill_url"`
+	// RetriPct is the average retrievability of the deck's cards, as a
+	// percentage in [0, 100]. New (unreviewed) cards contribute 0%.
+	// Orphan cards are excluded because only collection cards are considered.
+	RetriPct float64 `json:"retri_pct"`
 }
 
 // Run opens the database and collection once, registers all drill routes, then
@@ -80,9 +84,8 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	})
 
 	// /api/sessions returns the session list as JSON for backward compatibility.
-	sessionInfos := buildSessionList(cfg)
-	sessionJSON, _ := json.Marshal(sessionInfos)
 	router.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
+		sessionJSON, _ := json.Marshal(buildSessionList(cfg, col, database))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(sessionJSON)
 	}).Methods(http.MethodGet)
@@ -110,8 +113,10 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	}
 
 	// Index page — server-rendered with Go templates, no client-side JS fetch needed.
+	// Session infos are recomputed on every request so retrievability reflects
+	// reviews completed since the server started.
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderIndex(w, staticDir, sessionInfos)
+		renderIndex(w, staticDir, buildSessionList(cfg, col, database))
 	}).Methods(http.MethodGet)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -123,8 +128,48 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	return http.Serve(ln, router)
 }
 
-// buildSessionList converts config sessions to the JSON-serialisable form.
-func buildSessionList(cfg *config.Config) []sessionInfo {
+// computeAvgRetrieval returns the average retrievability of all cards in the
+// collection that belong to the given deck (or all decks when deckFilter is
+// empty), expressed as a percentage in [0, 100].
+//
+// New (unreviewed) cards contribute 0% to the average.
+// Orphan cards are naturally excluded because only col.Cards is iterated.
+func computeAvgRetrieval(col *collection.Collection, database *db.Database, deckFilter string) float64 {
+	today := types.Today()
+
+	cards := col.Cards
+	if deckFilter != "" {
+		var filtered []types.Card
+		for _, c := range cards {
+			if c.DeckName() == deckFilter {
+				filtered = append(filtered, c)
+			}
+		}
+		cards = filtered
+	}
+
+	if len(cards) == 0 {
+		return 0
+	}
+
+	var total float64
+	for _, card := range cards {
+		perf, err := database.GetCardPerformance(card.Hash())
+		if err != nil || perf.IsNew() {
+			// New cards contribute 0; total is unchanged.
+			continue
+		}
+		rp := perf.Reviewed()
+		elapsed := today.Time().Sub(rp.LastReviewedAt.Date().Time()).Hours() / 24
+		total += fsrs.Retrievability(elapsed, rp.Stability)
+	}
+
+	return total / float64(len(cards)) * 100
+}
+
+// buildSessionList converts config sessions to the JSON-serialisable form,
+// computing average retrievability for each session's deck.
+func buildSessionList(cfg *config.Config, col *collection.Collection, database *db.Database) []sessionInfo {
 	list := make([]sessionInfo, 0, len(cfg.Sessions))
 	for _, sc := range cfg.Sessions {
 		drillURL := "/drill/"
@@ -135,6 +180,7 @@ func buildSessionList(cfg *config.Config) []sessionInfo {
 			Name:     sc.Name,
 			Path:     sc.Path,
 			DrillURL: drillURL,
+			RetriPct: computeAvgRetrieval(col, database, sc.FromDeck),
 		})
 	}
 	return list

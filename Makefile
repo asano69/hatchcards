@@ -31,6 +31,11 @@ build-container:
 build-image: ## Build Docker image
 	docker build -t registry.internal/go-hashcards:latest .
 
+# ─────────────────────────────────────────
+.PHONY: build-image-no-cache
+build-image-no-cache: ## Build Docker image
+	docker build --no-cache -t registry.internal/go-hashcards:latest .
+
 .PHONY: push-image
 push-image: ## Push Docker image
 	docker push registry.internal/go-hashcards:latest
