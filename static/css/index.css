@@ -10,8 +10,15 @@
 
 .index-wrap h1 {
     font-size: 48px;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--space-xl);
     text-align: center;
+}
+
+/* ---- New Card button area ---- */
+
+.index-actions {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
 }
 
 .session-list {
@@ -65,7 +72,7 @@
 
     .index-wrap h1 {
         font-size: 36px;
-        margin-bottom: var(--space-xl);
+        margin-bottom: var(--space-lg);
     }
 
     .session-link {

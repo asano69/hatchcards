@@ -53,7 +53,7 @@
     padding-left: var(--space-2xl);
 }
 
-/* ---- Action buttons ---- */
+/* ---- Action buttons container ---- */
 
 .shutdown-container {
     margin-top: var(--space-2xl);
@@ -66,47 +66,10 @@
     flex-wrap: wrap;
 }
 
-/* Shared button base used on the done page */
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+/* Done page buttons are slightly larger than the drill controls */
+.shutdown-container .btn {
     padding: 12px 24px;
     font-size: 18px;
-    font-family: var(--font-sans);
-    font-weight: 600;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    text-decoration: none;
-    border: 1px solid transparent;
-    transition: background-color 0.2s, box-shadow 0.2s;
-    touch-action: manipulation;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-/* Reset (destructive) button */
-.action-btn.reset-btn {
-    background: var(--color-btn-reset-bg);
-    border-color: var(--color-btn-reset-border);
-    color: var(--color-btn-reset-text);
-    box-shadow: var(--color-btn-reset-shadow) 0 2px 8px 0;
-}
-
-.action-btn.reset-btn:hover {
-    background: var(--color-btn-reset-hover);
-}
-
-/* Home (navigation) button */
-.action-btn.home-btn {
-    background: var(--color-btn-home-bg);
-    border-color: var(--color-btn-home-border);
-    color: var(--color-btn-home-text);
-    box-shadow: var(--color-btn-home-shadow) 0 2px 8px 0;
-}
-
-.action-btn.home-btn:hover {
-    background: var(--color-btn-home-hover);
 }
 
 /* ---- Mobile done page ---- */
@@ -140,7 +103,7 @@
         padding-left: var(--space-lg);
     }
 
-    .action-btn {
+    .shutdown-container .btn {
         font-size: 16px;
         padding: 10px 18px;
     }

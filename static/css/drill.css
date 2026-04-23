@@ -1,6 +1,5 @@
 /* =========================================================================
    Drill page — layout, rich text, and buttons.
-   (Merged from former drill.css and components.css.)
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
@@ -106,11 +105,7 @@ noscript .root .card-container .card .card-content {
 .root .card-container .card .card-content .answer,
 .root .card-container .card .card-content .prompt {
     padding: var(--space-md);
-    /* min-width: 100% ensures the element fills the card when content is narrow.
-       width: max-content lets it expand past the card width when content overflows,
-       so that border-bottom stretches with the content instead of clipping. */
     min-width: 100%;
-    /* width: max-content; */
 }
 
 .root .card-container .card .card-content .question {
@@ -127,52 +122,6 @@ noscript .root .card-container .card .card-content {
     flex-shrink: 0;
     border-top: 1px solid var(--color-border);
     background: var(--color-surface-raised);
-
-
-}
-
-/* -------------------------------------------------------------------------
-   Buttons — unified style for every drill-page button
-   (header Reset + control-bar inputs share identical visual treatment)
-   ------------------------------------------------------------------------- */
-
-.root .controls form input,
-.root .controls form button,
-.reset-btn {
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--color-btn-bg);
-    border: 1px solid var(--color-btn-border);
-    color: var(--color-btn-text);
-    font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
-    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-    white-space: nowrap;
-    touch-action: manipulation;
-
-}
-
-.root .controls form input:hover,
-.reset-btn:hover {
-    background: var(--color-btn-hover-bg);
-    border-color: var(--color-btn-hover-border);
-    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
-}
-
-.root .controls form input:active,
-.reset-btn:active {
-    background: var(--color-btn-active-bg);
-    border-color: var(--color-btn-active-border);
-    box-shadow: var(--color-btn-shadow) 0 0 2px 0;
-}
-
-.root .controls form input:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
 }
 
 /* -------------------------------------------------------------------------
@@ -337,12 +286,14 @@ noscript .root .card-container .card .card-content {
 
     .root .controls form .spacer { flex: 1; }
 
-    .root .controls form input {
+    /* Layout-specific padding for drill control buttons */
+    .root .controls form .btn {
         padding: 7px 12px;
         margin: 0 var(--space-md);
     }
 
-    .reset-btn {
+    /* Reset button in header */
+    .reset-form .btn {
         padding: var(--space-sm) var(--space-md);
     }
 
@@ -401,12 +352,14 @@ noscript .root .card-container .card .card-content {
     /* Spacers are unused in grid layout. */
     .root .controls form .spacer { display: none; }
 
-    .root .controls form input {
+    /* Layout-specific padding for drill control buttons on mobile */
+    .root .controls form .btn {
         padding: 9px 10px;
         font-size: 15px;
     }
 
-    .reset-btn {
+    /* Reset button in header on mobile */
+    .reset-form .btn {
         padding: var(--space-sm);
         font-size: 15px;
     }
@@ -417,7 +370,7 @@ noscript .root .card-container .card .card-content {
         gap: var(--space-xs);
     }
 
-    .grades input {
+    .grades .btn {
         flex: 1;
         min-width: 0;
         padding: 9px 4px;

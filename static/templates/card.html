@@ -4,7 +4,7 @@
 <div class="root">
   <div class="header">
     <form class="reset-form" action="{{.BasePath}}" method="post">
-      <button class="reset-btn" type="submit" name="action" value="Reset" title="Discard session and return home">Reset</button>
+      <button class="btn btn-danger" type="submit" name="action" value="Reset" title="Discard session and return home">Reset</button>
     </form>
     <div class="progress-bar">
       <div class="progress-fill" style="width: {{.ProgressPct}}%;"></div>
@@ -23,9 +23,9 @@
   <div class="controls">
     <form action="{{.BasePath}}" method="post">
       {{if .CanUndo}}
-        <input id="undo" type="submit" name="action" value="Undo" title="Undo last action. Shortcut: u.">
+        <input id="undo" class="btn" type="submit" name="action" value="Undo" title="Undo last action. Shortcut: u.">
       {{else}}
-        <input id="undo" type="submit" name="action" value="Undo" disabled>
+        <input id="undo" class="btn" type="submit" name="action" value="Undo" disabled>
       {{end}}
 
       <div class="spacer"></div>
@@ -33,22 +33,22 @@
       {{if .Revealed}}
         <div class="grades">
           {{if eq .AnswerControls "binary"}}
-            <input id="forgot" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
-            <input id="good"   type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
+            <input id="forgot" class="btn" type="submit" name="action" value="Forgot" title="Mark card as forgotten. Shortcut: 1.">
+            <input id="good"   class="btn" type="submit" name="action" value="Good"   title="Mark card as remembered well. Shortcut: 3.">
           {{else}}
-            <input id="forgot" type="submit" name="action" value="Forgot" title="Forgot. Shortcut: 1.">
-            <input id="hard"   type="submit" name="action" value="Hard"   title="Hard. Shortcut: 2.">
-            <input id="good"   type="submit" name="action" value="Good"   title="Good. Shortcut: 3.">
-            <input id="easy"   type="submit" name="action" value="Easy"   title="Easy. Shortcut: 4.">
+            <input id="forgot" class="btn" type="submit" name="action" value="Forgot" title="Forgot. Shortcut: 1.">
+            <input id="hard"   class="btn" type="submit" name="action" value="Hard"   title="Hard. Shortcut: 2.">
+            <input id="good"   class="btn" type="submit" name="action" value="Good"   title="Good. Shortcut: 3.">
+            <input id="easy"   class="btn" type="submit" name="action" value="Easy"   title="Easy. Shortcut: 4.">
           {{end}}
         </div>
       {{else}}
-        <input id="reveal" type="submit" name="action" value="Reveal" title="Show the answer. Shortcut: space.">
+        <input id="reveal" class="btn" type="submit" name="action" value="Reveal" title="Show the answer. Shortcut: space.">
       {{end}}
 
       <div class="spacer"></div>
 
-      <input id="end" type="submit" name="action" value="End" title="End the session (changes are saved)">
+      <input id="end" class="btn" type="submit" name="action" value="End" title="End the session (changes are saved)">
     </form>
   </div>
 </div>

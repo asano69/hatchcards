@@ -91,42 +91,9 @@
     margin-top: var(--space-sm);
 }
 
-.new-card-back {
-    font-family: var(--font-sans);
-    font-size: 15px;
-    color: var(--color-text-muted);
-    text-decoration: none;
-}
-
-.new-card-back:hover {
-    color: var(--color-text);
-}
-
-.new-card-form button[type="submit"] {
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--color-btn-bg);
-    border: 1px solid var(--color-btn-border);
-    color: var(--color-btn-text);
-    font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 600;
+/* Save button is slightly larger than the default .btn size */
+.new-card-form .btn[type="submit"] {
     padding: 9px 28px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
-    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.new-card-form button[type="submit"]:hover {
-    background: var(--color-btn-hover-bg);
-    border-color: var(--color-btn-hover-border);
-    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
-}
-
-.new-card-form button[type="submit"]:active {
-    background: var(--color-btn-active-bg);
-    border-color: var(--color-btn-active-border);
 }
 
 @media (max-width: 768px) {
