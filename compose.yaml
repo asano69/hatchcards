@@ -6,7 +6,7 @@ services:
       - "3000:3000"
     volumes:
       - ./config.toml:/hashcards/config.toml:ro
-      - ./example:/hashcards/example
+      - ./example:/hashcards/cards
       - ./data:/hashcards/data
     environment:
       - TZ=Azia/Tokyo

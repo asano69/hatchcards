@@ -353,7 +353,7 @@ func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 		}, deck)
 		mdPath := filepath.Join(uploadsDir, safeName+".md")
 
-		entry := fmt.Sprintf("Q: %s\nA: %s\n---\n", question, answer)
+		entry := fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
 		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			data.Error = fmt.Sprintf("Could not open file: %v", err)
