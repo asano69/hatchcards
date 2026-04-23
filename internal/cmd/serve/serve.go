@@ -9,8 +9,10 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +38,17 @@ type sessionInfo struct {
 	// percentage in [0, 100]. New (unreviewed) cards contribute 0%.
 	// Orphan cards are excluded because only collection cards are considered.
 	RetriPct float64 `json:"retri_pct"`
+}
+
+// newCardData holds template data for the /new card registration page.
+type newCardData struct {
+	Decks        []string
+	SelectedDeck string
+	Question     string
+	Answer       string
+	Success      bool
+	SavedFile    string
+	Error        string
 }
 
 // Run opens the database and collection once, registers all drill routes, then
@@ -89,6 +102,10 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(sessionJSON)
 	}).Methods(http.MethodGet)
+
+	// /new — card registration form.
+	router.HandleFunc("/new", newCardGetHandler(cfg, staticDir)).Methods(http.MethodGet)
+	router.HandleFunc("/new", newCardPostHandler(cfg, staticDir)).Methods(http.MethodPost)
 
 	// Register drill routes with more specific (longer) paths first to avoid
 	// the all-decks PathPrefix("/drill") intercepting named-deck requests.
@@ -264,4 +281,115 @@ func registerDrillRoute(
 		cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
 	)
 	return nil
+}
+
+// deckNames returns a deduplicated list of deck names from the config sessions.
+// Sessions without a FromDeck (all-decks sessions) are skipped.
+func deckNames(cfg *config.Config) []string {
+	seen := make(map[string]struct{})
+	var names []string
+	for _, s := range cfg.Sessions {
+		if s.FromDeck == "" {
+			continue
+		}
+		if _, ok := seen[s.FromDeck]; !ok {
+			seen[s.FromDeck] = struct{}{}
+			names = append(names, s.FromDeck)
+		}
+	}
+	return names
+}
+
+// newCardGetHandler renders the blank card registration form.
+func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decks := deckNames(cfg)
+		selected := ""
+		if len(decks) > 0 {
+			selected = decks[0]
+		}
+		renderNewCard(w, staticDir, newCardData{
+			Decks:        decks,
+			SelectedDeck: selected,
+		})
+	}
+}
+
+// newCardPostHandler handles form submission and appends the card to the
+// appropriate uploads/<deck>.md file under the collection root.
+func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decks := deckNames(cfg)
+		deck := strings.TrimSpace(r.FormValue("deck"))
+		question := strings.TrimSpace(r.FormValue("question"))
+		answer := strings.TrimSpace(r.FormValue("answer"))
+
+		data := newCardData{
+			Decks:        decks,
+			SelectedDeck: deck,
+			Question:     question,
+			Answer:       answer,
+		}
+
+		if deck == "" || question == "" || answer == "" {
+			data.Error = "All fields are required."
+			renderNewCard(w, staticDir, data)
+			return
+		}
+
+		uploadsDir := filepath.Join(cfg.Data.Root, "uploads")
+		if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+			data.Error = fmt.Sprintf("Could not create uploads directory: %v", err)
+			renderNewCard(w, staticDir, data)
+			return
+		}
+
+		// Sanitize the deck name to produce a safe file name.
+		safeName := strings.Map(func(r rune) rune {
+			if strings.ContainsRune(`/\:*?"<>|`, r) {
+				return '_'
+			}
+			return r
+		}, deck)
+		mdPath := filepath.Join(uploadsDir, safeName+".md")
+
+		entry := fmt.Sprintf("Q: %s\nA: %s\n---\n", question, answer)
+		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			data.Error = fmt.Sprintf("Could not open file: %v", err)
+			renderNewCard(w, staticDir, data)
+			return
+		}
+		defer f.Close()
+
+		if _, err := f.WriteString(entry); err != nil {
+			data.Error = fmt.Sprintf("Could not write card: %v", err)
+			renderNewCard(w, staticDir, data)
+			return
+		}
+
+		// On success, reset the form but keep the same deck selected.
+		renderNewCard(w, staticDir, newCardData{
+			Decks:        decks,
+			SelectedDeck: deck,
+			Success:      true,
+			SavedFile:    mdPath,
+		})
+	}
+}
+
+// renderNewCard renders the new.html template with the given data.
+func renderNewCard(w http.ResponseWriter, staticDir string, data newCardData) {
+	tmpl, err := template.ParseFiles(
+		filepath.Join(staticDir, "templates", "base.html"),
+		filepath.Join(staticDir, "templates", "new.html"),
+	)
+	if err != nil {
+		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+		fmt.Printf("new card render error: %v\n", err)
+	}
 }

@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="new-card-wrap">
+  <h1>Add Card</h1>
+  {{if .Success}}
+  <p class="new-card-notice new-card-notice--ok">Saved to {{.SavedFile}}</p>
+  {{end}}
+  {{if .Error}}
+  <p class="new-card-notice new-card-notice--err">{{.Error}}</p>
+  {{end}}
+  <form class="new-card-form" action="/new" method="post">
+    <label for="deck">Deck</label>
+    <select id="deck" name="deck" required>
+      {{range .Decks}}
+      <option value="{{.}}" {{if eq . $.SelectedDeck}}selected{{end}}>{{.}}</option>
+      {{end}}
+    </select>
+
+    <label for="question">Question</label>
+    <textarea id="question" name="question" rows="4" required placeholder="Question">{{.Question}}</textarea>
+
+    <label for="answer">Answer</label>
+    <textarea id="answer" name="answer" rows="4" required placeholder="Answer">{{.Answer}}</textarea>
+
+    <div class="new-card-actions">
+      <a href="/" class="action-btn home-btn" title="Return home">
+        Home
+      </a>
+      <button type="submit">Save</button>
+    </div>
+  </form>
+</div>
+{{end}}
