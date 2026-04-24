@@ -1,9 +1,6 @@
 {{define "content"}}
 <div class="index-wrap">
     <h1>Hashcards</h1>
-    <div class="index-actions">
-        <a href="/new" class="btn btn-primary" title="Add a new card">New Card</a>
-    </div>
     {{if .Sessions}}
     <ul class="session-list">
         {{range .Sessions}}
@@ -19,4 +16,8 @@
     <p class="index-message">No sessions configured.</p>
     {{end}}
 </div>
+<div class="index-actions">
+    <a href="/new" class="btn" title="Add a new card">New Card</a>
+</div>
+
 {{end}}
