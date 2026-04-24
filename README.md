@@ -5,3 +5,4 @@
 
 ---
 - https://gutenberg.org/cache/epub/47748/pg47748-images.html
+- https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up
