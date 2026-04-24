@@ -1,0 +1,45 @@
+{{define "content"}}
+<div class="new-card-wrap">
+  <h1>Delete Cards</h1>
+
+  {{if .Message}}
+  <p class="new-card-notice new-card-notice--ok">{{.Message}}</p>
+  {{end}}
+
+  <form class="new-card-form" action="/delete" method="post">
+    <label for="deck">Deck</label>
+    <select id="deck" name="deck" onchange="this.form.submit()">
+      <option value="">-- select a deck --</option>
+      {{range .Decks}}
+      <option value="{{.}}" {{if eq . $.SelectedDeck}}selected{{end}}>{{.}}</option>
+      {{end}}
+    </select>
+
+    {{if .Cards}}
+    <label for="card-list">Cards <small style="font-weight:normal;text-transform:none;">(Ctrl/Cmd+クリックで複数選択)</small></label>
+    <select id="card-list" name="hashes" multiple size="16" style="font-family: var(--font-mono); font-size: 14px; min-height: 200px;">
+      {{range .Cards}}
+      <option value="{{.Hash}}">{{.Label}}</option>
+      {{end}}
+    </select>
+
+    <div class="new-card-actions">
+      <button class="btn btn-danger" type="submit"
+              onclick="return confirm('選択したカードをMarkdownファイルから削除します。よろしいですか？')">
+        Delete
+      </button>
+      <a href="/" class="btn" title="Return home">Home</a>
+    </div>
+    {{else if .SelectedDeck}}
+    <p style="color: var(--color-text-muted); font-family: var(--font-sans);">No cards found in this deck.</p>
+    <div class="new-card-actions">
+      <a href="/" class="btn" title="Return home">Home</a>
+    </div>
+    {{else}}
+    <div class="new-card-actions">
+      <a href="/" class="btn" title="Return home">Home</a>
+    </div>
+    {{end}}
+  </form>
+</div>
+{{end}}

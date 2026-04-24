@@ -107,6 +107,10 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	router.HandleFunc("/new", newCardGetHandler(cfg, staticDir)).Methods(http.MethodGet)
 	router.HandleFunc("/new", newCardPostHandler(cfg, staticDir)).Methods(http.MethodPost)
 
+	dh := &deleteHandler{col: col, staticDir: staticDir}
+	router.HandleFunc("/delete", dh.handleGet).Methods(http.MethodGet)
+	router.HandleFunc("/delete", dh.handlePost).Methods(http.MethodPost)
+
 	// Register drill routes with more specific (longer) paths first to avoid
 	// the all-decks PathPrefix("/drill") intercepting named-deck requests.
 	sessions := make([]config.SessionConfig, len(cfg.Sessions))
