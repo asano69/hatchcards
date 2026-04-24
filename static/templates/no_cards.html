@@ -2,9 +2,9 @@
 <div class="finished">
   <h1>No cards due today.</h1>
   <div class="shutdown-container">
-    <a href="/" class="action-btn home-btn" title="Return home">
-      Home
-    </a>
+    <form action="{{.BasePath}}" method="post">
+      <button class="btn btn-primary" type="submit" name="action" value="ReturnHome" title="Reset session and return home">Home</button>
+    </form>
   </div>
 </div>
 {{end}}
