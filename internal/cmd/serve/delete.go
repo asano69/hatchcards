@@ -171,13 +171,29 @@ func (h *deleteHandler) buildCardList(deckName string) []deleteCardItem {
 		members        []types.Card
 	}
 
+	// Collect cards belonging to this deck, then sort by file path and line
+	// number so the list approximates the order in which cards were added.
+	var deckCards []types.Card
+	for _, card := range h.col.Cards {
+		if card.DeckName() == deckName {
+			deckCards = append(deckCards, card)
+		}
+	}
+	sort.Slice(deckCards, func(i, j int) bool {
+		if deckCards[i].FilePath() != deckCards[j].FilePath() {
+			return deckCards[i].FilePath() < deckCards[j].FilePath()
+		}
+		return deckCards[i].LineStart() < deckCards[j].LineStart()
+	})
+
 	groups := make(map[string]*familyGroup)
 	var order []string
 
-	for _, card := range h.col.Cards {
+	for _, card := range deckCards {
 		if card.DeckName() != deckName {
 			continue
 		}
+
 		var key string
 		if fh := card.FamilyHash(); fh != nil {
 			key = "f:" + fh.Hex()
