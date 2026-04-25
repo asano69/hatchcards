@@ -11,14 +11,17 @@ import (
 	"strings"
 
 	"github.com/asano69/hashcards/internal/collection"
+	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/parser"
 	"github.com/asano69/hashcards/internal/types"
 )
 
 // deleteHandler serves the /delete page.
 type deleteHandler struct {
-	col       *collection.Collection
-	staticDir string
+	col            *collection.Collection
+	staticDir      string
+	db             *db.Database
+	collectionRoot string
 }
 
 // deleteCardItem is one entry in the card list on the delete page.
@@ -37,6 +40,15 @@ type deletePageData struct {
 }
 
 func (h *deleteHandler) handleGet(w http.ResponseWriter, r *http.Request) {
+	// Reload the collection from disk on every request so that newly added or
+	// deleted cards are reflected immediately without a server restart.
+	col, err := collection.Load(h.collectionRoot, h.db)
+	if err != nil {
+		http.Error(w, "failed to load collection: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.col = col
+
 	deck := r.URL.Query().Get("deck")
 	msg := r.URL.Query().Get("msg")
 	decks := collectionDeckNames(h.col)
@@ -59,6 +71,14 @@ func (h *deleteHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad form data", http.StatusBadRequest)
 		return
 	}
+
+	// Reload the collection so we operate on the current state of the files.
+	col, err := collection.Load(h.collectionRoot, h.db)
+	if err != nil {
+		http.Error(w, "failed to load collection: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.col = col
 
 	deckName := r.FormValue("deck")
 	selectedHashes := r.Form["hashes"]

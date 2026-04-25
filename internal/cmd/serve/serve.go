@@ -107,9 +107,15 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 
 	// /new — card registration form.
 	router.HandleFunc("/new", newCardGetHandler(cfg, staticDir)).Methods(http.MethodGet)
-	router.HandleFunc("/new", newCardPostHandler(cfg, staticDir)).Methods(http.MethodPost)
+	router.HandleFunc("/new", newCardPostHandler(cfg, staticDir, database)).Methods(http.MethodPost)
 
-	dh := &deleteHandler{col: col, staticDir: staticDir}
+	// /delete — pass db and collectionRoot so each request reloads the collection.
+	dh := &deleteHandler{
+		col:            col,
+		staticDir:      staticDir,
+		db:             database,
+		collectionRoot: cfg.Data.Root,
+	}
 	router.HandleFunc("/delete", dh.handleGet).Methods(http.MethodGet)
 	router.HandleFunc("/delete", dh.handlePost).Methods(http.MethodPost)
 
@@ -328,7 +334,9 @@ func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 
 // newCardPostHandler handles form submission and appends the card to the
 // appropriate uploads/<deck>.md file under the collection root.
-func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
+// After saving, the collection is reloaded to sync new cards into the database,
+// which ensures the progress bar and delete page reflect the new card immediately.
+func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
 		mode := r.FormValue("mode")
@@ -400,6 +408,14 @@ func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 			data.Error = fmt.Sprintf("Could not write card: %v", err)
 			renderNewCard(w, staticDir, data)
 			return
+		}
+		f.Close()
+
+		// Reload the collection to insert the new card into the database.
+		// This ensures the progress bar and delete page reflect the new card
+		// without requiring a server restart or a completed drill session.
+		if _, err := collection.Load(cfg.Data.Root, database); err != nil {
+			fmt.Printf("[new card] warning: reload collection: %v\n", err)
 		}
 
 		// On success, reset the form but keep the same deck and mode selected.
