@@ -7,9 +7,20 @@
   {{if .Error}}
   <p class="new-card-notice new-card-notice--err">{{.Error}}</p>
   {{end}}
-  <form class="new-card-form" action="/new" method="post">
-    <label for="deck">Deck</label>
-    <select id="deck" name="deck" required>
+
+  <div class="new-card-form" style="margin-bottom: var(--space-lg);">
+    <label for="mode-select">Mode</label>
+    <select id="mode-select" onchange="switchMode(this.value)">
+      <option value="single">Single card (Q &amp; A)</option>
+      <option value="bulk">Bulk paste (Markdown)</option>
+    </select>
+  </div>
+
+  <!-- Single card form -->
+  <form id="form-single" class="new-card-form" action="/new" method="post">
+    <input type="hidden" name="mode" value="single">
+    <label for="deck-single">Deck</label>
+    <select id="deck-single" name="deck" required>
       {{range .Decks}}
       <option value="{{.}}" {{if eq . $.SelectedDeck}}selected{{end}}>{{.}}</option>
       {{end}}
@@ -26,5 +37,38 @@
       <a href="/" class="btn" title="Return home">Home</a>
     </div>
   </form>
+
+  <!-- Bulk paste form -->
+  <form id="form-bulk" class="new-card-form" action="/new" method="post" style="display:none;">
+    <input type="hidden" name="mode" value="bulk">
+    <label for="deck-bulk">Deck</label>
+    <select id="deck-bulk" name="deck" required>
+      {{range .Decks}}
+      <option value="{{.}}" {{if eq . $.SelectedDeck}}selected{{end}}>{{.}}</option>
+      {{end}}
+    </select>
+
+    <label for="bulk-content">Markdown</label>
+    <textarea id="bulk-content" name="bulk_content" rows="16" required
+              placeholder="Q: What is X?&#10;A: Y&#10;&#10;C: The capital of [France] is [Paris].">{{.BulkContent}}</textarea>
+
+    <div class="new-card-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a href="/" class="btn" title="Return home">Home</a>
+    </div>
+  </form>
 </div>
+
+<script>
+  function switchMode(mode) {
+    document.getElementById('form-single').style.display = mode === 'single' ? '' : 'none';
+    document.getElementById('form-bulk').style.display  = mode === 'bulk'   ? '' : 'none';
+  }
+  // Restore mode after a failed save / page re-render.
+  (function() {
+    var mode = {{if eq .Mode "bulk"}}'bulk'{{else}}'single'{{end}};
+    document.getElementById('mode-select').value = mode;
+    switchMode(mode);
+  })();
+</script>
 {{end}}

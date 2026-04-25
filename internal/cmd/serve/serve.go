@@ -42,10 +42,12 @@ type sessionInfo struct {
 
 // newCardData holds template data for the /new card registration page.
 type newCardData struct {
+	Mode         string // "single" or "bulk"
 	Decks        []string
 	SelectedDeck string
 	Question     string
 	Answer       string
+	BulkContent  string
 	Success      bool
 	SavedFile    string
 	Error        string
@@ -313,6 +315,7 @@ func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 			selected = decks[0]
 		}
 		renderNewCard(w, staticDir, newCardData{
+			Mode:         "single",
 			Decks:        decks,
 			SelectedDeck: selected,
 		})
@@ -324,19 +327,20 @@ func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
+		mode := r.FormValue("mode")
+		if mode == "" {
+			mode = "single"
+		}
 		deck := strings.TrimSpace(r.FormValue("deck"))
-		question := strings.TrimSpace(r.FormValue("question"))
-		answer := strings.TrimSpace(r.FormValue("answer"))
 
 		data := newCardData{
+			Mode:         mode,
 			Decks:        decks,
 			SelectedDeck: deck,
-			Question:     question,
-			Answer:       answer,
 		}
 
-		if deck == "" || question == "" || answer == "" {
-			data.Error = "All fields are required."
+		if deck == "" {
+			data.Error = "Deck is required."
 			renderNewCard(w, staticDir, data)
 			return
 		}
@@ -357,7 +361,29 @@ func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 		}, deck)
 		mdPath := filepath.Join(uploadsDir, safeName+".md")
 
-		entry := fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
+		var entry string
+		if mode == "bulk" {
+			bulk := strings.TrimSpace(r.FormValue("bulk_content"))
+			if bulk == "" {
+				data.BulkContent = bulk
+				data.Error = "Content is required."
+				renderNewCard(w, staticDir, data)
+				return
+			}
+			entry = bulk + "\n\n---\n\n"
+		} else {
+			question := strings.TrimSpace(r.FormValue("question"))
+			answer := strings.TrimSpace(r.FormValue("answer"))
+			data.Question = question
+			data.Answer = answer
+			if question == "" || answer == "" {
+				data.Error = "Question and answer are required."
+				renderNewCard(w, staticDir, data)
+				return
+			}
+			entry = fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
+		}
+
 		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			data.Error = fmt.Sprintf("Could not open file: %v", err)
@@ -372,8 +398,9 @@ func newCardPostHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 			return
 		}
 
-		// On success, reset the form but keep the same deck selected.
+		// On success, reset the form but keep the same deck and mode selected.
 		renderNewCard(w, staticDir, newCardData{
+			Mode:         mode,
 			Decks:        decks,
 			SelectedDeck: deck,
 			Success:      true,
