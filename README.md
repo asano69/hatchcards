@@ -1,5 +1,5 @@
 # go-hashcards
-
+<img src="static/favicon.svg" width="100" align="right" />
 > [!NOTE]
 > This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
 
