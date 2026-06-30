@@ -5,7 +5,8 @@ package serve
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"github.com/gorilla/mux"
+
 	"io"
 	"net"
 	"net/http"
@@ -16,8 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
-
+	"github.com/asano69/hashcards/internal/assets"
 	drillcache "github.com/asano69/hashcards/internal/cmd/drill/cache"
 	"github.com/asano69/hashcards/internal/cmd/drill/handlers"
 	drillstate "github.com/asano69/hashcards/internal/cmd/drill/state"
@@ -139,7 +139,7 @@ func Run(cfg *config.Config, out io.Writer) error {
 		if err != nil {
 			freshCol = col
 		}
-		renderIndex(w,  buildSessionList(cfg, freshCol, database))
+		renderIndex(w, buildSessionList(cfg, freshCol, database))
 	}).Methods(http.MethodGet)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -287,7 +287,7 @@ func registerDrillRoute(
 	sub := router.PathPrefix(mountPath).Subrouter()
 	handlers.Register(
 		sub, &mu, sess, htmlCache, database,
-		done,  col.Root, sc.AnswerControls, mountPath,
+		done, col.Root, sc.AnswerControls, mountPath,
 		cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
 	)
 	return nil
@@ -311,7 +311,7 @@ func deckNames(cfg *config.Config) []string {
 }
 
 // newCardGetHandler renders the blank card registration form.
-func newCardGetHandler(cfg *config.Config,  http.HandlerFunc {
+func newCardGetHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
 		selected := ""
@@ -330,7 +330,7 @@ func newCardGetHandler(cfg *config.Config,  http.HandlerFunc {
 // appropriate uploads/<deck>.md file under the collection root.
 // After saving, the collection is reloaded to sync new cards into the database,
 // which ensures the progress bar and delete page reflect the new card immediately.
-func newCardPostHandler(cfg *config.Config,  database *db.Database) http.HandlerFunc {
+func newCardPostHandler(cfg *config.Config, database *db.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
 		mode := r.FormValue("mode")
@@ -347,14 +347,14 @@ func newCardPostHandler(cfg *config.Config,  database *db.Database) http.Handler
 
 		if deck == "" {
 			data.Error = "Deck is required."
-			renderNewCard(w,  data)
+			renderNewCard(w, data)
 			return
 		}
 
 		uploadsDir := filepath.Join(cfg.Data.Root, "uploads")
 		if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 			data.Error = fmt.Sprintf("Could not create uploads directory: %v", err)
-			renderNewCard(w,  data)
+			renderNewCard(w, data)
 			return
 		}
 
@@ -373,7 +373,7 @@ func newCardPostHandler(cfg *config.Config,  database *db.Database) http.Handler
 			if bulk == "" {
 				data.BulkContent = bulk
 				data.Error = "Content is required."
-				renderNewCard(w,  data)
+				renderNewCard(w, data)
 				return
 			}
 			entry = bulk + "\n\n---\n\n"
@@ -384,7 +384,7 @@ func newCardPostHandler(cfg *config.Config,  database *db.Database) http.Handler
 			data.Answer = answer
 			if question == "" || answer == "" {
 				data.Error = "Question and answer are required."
-				renderNewCard(w,  data)
+				renderNewCard(w, data)
 				return
 			}
 			entry = fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
@@ -393,14 +393,14 @@ func newCardPostHandler(cfg *config.Config,  database *db.Database) http.Handler
 		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			data.Error = fmt.Sprintf("Could not open file: %v", err)
-			renderNewCard(w,  data)
+			renderNewCard(w, data)
 			return
 		}
 		defer f.Close()
 
 		if _, err := f.WriteString(entry); err != nil {
 			data.Error = fmt.Sprintf("Could not write card: %v", err)
-			renderNewCard(w,  data)
+			renderNewCard(w, data)
 			return
 		}
 		f.Close()
@@ -413,7 +413,7 @@ func newCardPostHandler(cfg *config.Config,  database *db.Database) http.Handler
 		}
 
 		// On success, reset the form but keep the same deck and mode selected.
-		renderNewCard(w,  newCardData{
+		renderNewCard(w, newCardData{
 			Mode:         mode,
 			Decks:        decks,
 			SelectedDeck: deck,

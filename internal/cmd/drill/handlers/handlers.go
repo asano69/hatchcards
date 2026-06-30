@@ -26,6 +26,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/asano69/hashcards/internal/assets"
 	drillcache "github.com/asano69/hashcards/internal/cmd/drill/cache"
 	"github.com/asano69/hashcards/internal/cmd/drill/state"
 	"github.com/asano69/hashcards/internal/collection"

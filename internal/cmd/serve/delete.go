@@ -2,7 +2,6 @@ package serve
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/asano69/hashcards/internal/assets"
 	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/parser"
