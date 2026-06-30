@@ -88,7 +88,13 @@ func (c *ServeCmd) Run(out io.Writer) error {
 
 func Run(args []string, stdout, stderr io.Writer) error {
 	cli := CLI{}
-	parser, err := kong.New(&cli, kong.Name("hashcards"), kong.Description(description), kong.Writers(stdout, stderr), kong.Bind(stdout))
+	parser, err := kong.New(
+		&cli,
+		kong.Name("hashcards"),
+		kong.Description(description),
+		kong.Writers(stdout, stderr),
+		kong.BindTo(stdout, (*io.Writer)(nil)),
+	)
 	if err != nil {
 		return err
 	}
