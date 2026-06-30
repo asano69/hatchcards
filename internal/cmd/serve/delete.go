@@ -19,7 +19,6 @@ import (
 // deleteHandler serves the /delete page.
 type deleteHandler struct {
 	col            *collection.Collection
-	staticDir      string
 	db             *db.Database
 	collectionRoot string
 }
@@ -230,12 +229,8 @@ func (h *deleteHandler) buildCardList(deckName string) []deleteCardItem {
 	}
 	return items
 }
-
 func (h *deleteHandler) renderPage(w http.ResponseWriter, data deletePageData) {
-	tmpl, err := template.ParseFiles(
-		filepath.Join(h.staticDir, "templates", "base.html"),
-		filepath.Join(h.staticDir, "templates", "delete.html"),
-	)
+	tmpl, err := assets.ParseTemplate("delete.html")
 	if err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 		return

@@ -55,7 +55,7 @@ type newCardData struct {
 
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
-func Run(cfg *config.Config, staticDir string, out io.Writer) error {
+func Run(cfg *config.Config, out io.Writer) error {
 	database, err := db.Open(cfg.Data.DB)
 	if err != nil {
 		return err
@@ -74,26 +74,17 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	}
 
 	router := mux.NewRouter()
+	// Serve embedded static assets under /static/.
+	router.PathPrefix("/static/").Handler(
+		http.StripPrefix("/static/", http.FileServer(http.FS(assets.FS))),
+	)
 
-	// Serve static assets under /static/.
-	staticFS := http.FileServer(http.Dir(staticDir))
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", staticFS))
+	// Serve KaTeX assets under /katex/ too, since katex.min.css references
+	// /katex/fonts/... with absolute paths.
+	router.PathPrefix("/katex/").Handler(
+		http.StripPrefix("/katex/", http.FileServer(http.FS(assets.Sub("katex")))),
+	)
 
-	// Serve KaTeX assets under /katex/ so that the URLs embedded in
-	// katex.min.css (which reference /katex/fonts/...) resolve correctly.
-	katexFS := http.FileServer(http.Dir(filepath.Join(staticDir, "katex")))
-	router.PathPrefix("/katex/").Handler(http.StripPrefix("/katex/", katexFS))
-
-	// Serve PWA and root-level files directly from the static directory.
-	for _, f := range []string{"manifest.json", "sw.js", "favicon.svg"} {
-		f := f
-		router.HandleFunc("/"+f, func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(staticDir, f))
-		})
-	}
-
-	// Redirect /favicon.ico to the SVG icon so that browsers (e.g. Firefox)
-	// that unconditionally request favicon.ico do not receive a 404.
 	router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
@@ -106,13 +97,12 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	}).Methods(http.MethodGet)
 
 	// /new — card registration form.
-	router.HandleFunc("/new", newCardGetHandler(cfg, staticDir)).Methods(http.MethodGet)
-	router.HandleFunc("/new", newCardPostHandler(cfg, staticDir, database)).Methods(http.MethodPost)
+	router.HandleFunc("/new", newCardGetHandler(cfg)).Methods(http.MethodGet)
+	router.HandleFunc("/new", newCardPostHandler(cfg, database)).Methods(http.MethodPost)
 
 	// /delete — pass db and collectionRoot so each request reloads the collection.
 	dh := &deleteHandler{
 		col:            col,
-		staticDir:      staticDir,
 		db:             database,
 		collectionRoot: cfg.Data.Root,
 	}
@@ -136,7 +126,7 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 		} else {
 			mountPath = "/drill/" + sc.Path
 		}
-		if err := registerDrillRoute(router, sc, col, database, fsrsCfg, mountPath, staticDir); err != nil {
+		if err := registerDrillRoute(router, sc, col, database, fsrsCfg, mountPath); err != nil {
 			return fmt.Errorf("setup session %q: %w", sc.Name, err)
 		}
 	}
@@ -149,7 +139,7 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 		if err != nil {
 			freshCol = col
 		}
-		renderIndex(w, staticDir, buildSessionList(cfg, freshCol, database))
+		renderIndex(w,  buildSessionList(cfg, freshCol, database))
 	}).Methods(http.MethodGet)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -221,11 +211,8 @@ func buildSessionList(cfg *config.Config, col *collection.Collection, database *
 
 // renderIndex renders the index page using Go templates with the session list
 // injected server-side, eliminating the need for a client-side fetch.
-func renderIndex(w http.ResponseWriter, staticDir string, sessions []sessionInfo) {
-	tmpl, err := template.ParseFiles(
-		filepath.Join(staticDir, "templates", "base.html"),
-		filepath.Join(staticDir, "templates", "index.html"),
-	)
+func renderIndex(w http.ResponseWriter, sessions []sessionInfo) {
+	tmpl, err := assets.ParseTemplate("index.html")
 	if err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -245,7 +232,6 @@ func registerDrillRoute(
 	database *db.Database,
 	fsrsCfg fsrs.FSRSConfig,
 	mountPath string,
-	staticDir string,
 ) error {
 	due, err := col.DueToday(types.Today())
 	if err != nil {
@@ -301,7 +287,7 @@ func registerDrillRoute(
 	sub := router.PathPrefix(mountPath).Subrouter()
 	handlers.Register(
 		sub, &mu, sess, htmlCache, database,
-		done, staticDir, col.Root, sc.AnswerControls, mountPath,
+		done,  col.Root, sc.AnswerControls, mountPath,
 		cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
 	)
 	return nil
@@ -325,14 +311,14 @@ func deckNames(cfg *config.Config) []string {
 }
 
 // newCardGetHandler renders the blank card registration form.
-func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
+func newCardGetHandler(cfg *config.Config,  http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
 		selected := ""
 		if len(decks) > 0 {
 			selected = decks[0]
 		}
-		renderNewCard(w, staticDir, newCardData{
+		renderNewCard(w, newCardData{
 			Mode:         "single",
 			Decks:        decks,
 			SelectedDeck: selected,
@@ -344,7 +330,7 @@ func newCardGetHandler(cfg *config.Config, staticDir string) http.HandlerFunc {
 // appropriate uploads/<deck>.md file under the collection root.
 // After saving, the collection is reloaded to sync new cards into the database,
 // which ensures the progress bar and delete page reflect the new card immediately.
-func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Database) http.HandlerFunc {
+func newCardPostHandler(cfg *config.Config,  database *db.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decks := deckNames(cfg)
 		mode := r.FormValue("mode")
@@ -361,14 +347,14 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 
 		if deck == "" {
 			data.Error = "Deck is required."
-			renderNewCard(w, staticDir, data)
+			renderNewCard(w,  data)
 			return
 		}
 
 		uploadsDir := filepath.Join(cfg.Data.Root, "uploads")
 		if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 			data.Error = fmt.Sprintf("Could not create uploads directory: %v", err)
-			renderNewCard(w, staticDir, data)
+			renderNewCard(w,  data)
 			return
 		}
 
@@ -387,7 +373,7 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 			if bulk == "" {
 				data.BulkContent = bulk
 				data.Error = "Content is required."
-				renderNewCard(w, staticDir, data)
+				renderNewCard(w,  data)
 				return
 			}
 			entry = bulk + "\n\n---\n\n"
@@ -398,7 +384,7 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 			data.Answer = answer
 			if question == "" || answer == "" {
 				data.Error = "Question and answer are required."
-				renderNewCard(w, staticDir, data)
+				renderNewCard(w,  data)
 				return
 			}
 			entry = fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
@@ -407,14 +393,14 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			data.Error = fmt.Sprintf("Could not open file: %v", err)
-			renderNewCard(w, staticDir, data)
+			renderNewCard(w,  data)
 			return
 		}
 		defer f.Close()
 
 		if _, err := f.WriteString(entry); err != nil {
 			data.Error = fmt.Sprintf("Could not write card: %v", err)
-			renderNewCard(w, staticDir, data)
+			renderNewCard(w,  data)
 			return
 		}
 		f.Close()
@@ -427,7 +413,7 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 		}
 
 		// On success, reset the form but keep the same deck and mode selected.
-		renderNewCard(w, staticDir, newCardData{
+		renderNewCard(w,  newCardData{
 			Mode:         mode,
 			Decks:        decks,
 			SelectedDeck: deck,
@@ -438,11 +424,8 @@ func newCardPostHandler(cfg *config.Config, staticDir string, database *db.Datab
 }
 
 // renderNewCard renders the new.html template with the given data.
-func renderNewCard(w http.ResponseWriter, staticDir string, data newCardData) {
-	tmpl, err := template.ParseFiles(
-		filepath.Join(staticDir, "templates", "base.html"),
-		filepath.Join(staticDir, "templates", "new.html"),
-	)
+func renderNewCard(w http.ResponseWriter, data newCardData) {
+	tmpl, err := assets.ParseTemplate("new.html")
 	if err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 		return
