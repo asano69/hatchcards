@@ -1,8 +1,5 @@
 # go-hashcards
 <img src="static/favicon.svg" width="100" align="right" />
-> [!NOTE]
-> This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
-
 A plain text-based spaced repetition system. Features:
 
 - **Plain Text:** all your flashcards are stored as plain text files, so you can
@@ -17,6 +14,9 @@ A plain text-based spaced repetition system. Features:
   implemented using a Makefile and some scripts.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
+
+> [!NOTE]
+> This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
 
 ## Example
 
