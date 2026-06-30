@@ -74,17 +74,17 @@ func Run(cfg *config.Config, out io.Writer) error {
 
 	router := http.NewServeMux()
 	// Serve embedded static assets under /static/.
-	router.Handle("/static/",
+	router.Handle("GET /static/",
 		http.StripPrefix("/static/", http.FileServer(http.FS(assets.FS))),
 	)
 
 	// Serve KaTeX assets under /katex/ too, since katex.min.css references
 	// /katex/fonts/... with absolute paths.
-	router.Handle("/katex/",
+	router.Handle("GET /katex/",
 		http.StripPrefix("/katex/", http.FileServer(http.FS(assets.Sub("katex")))),
 	)
 
-	router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 
