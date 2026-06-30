@@ -1,6 +1,20 @@
-このプロジェクトは、rustのhashcardsからgoのポートをベースにし、さらに独自の機能を追加することが目的です。
+## Overview
 
-hashcardsはFSRSのflashcardsであり、カードをどれほど覚えていたかのボタンを押すことによってカードの状態が更新され、最適な復習タイミングがスケジュールしてくれるところが本質的な機能です。この部分はrustから機能を損ねないように慎重に移植する必要があります。
+hashcards is a plain-text spaced repetition system written in Rust. It parses Markdown files containing flashcards, stores performance data in SQLite, and presents cards through a web interface using the FSRS algorithm for scheduling.
 
-オリジナルのrustプロジェクトはrust-hashcardsにあります。
-goポート側には*_test.goが存在しないですが、オリジナルの仕様を理解するときに必要に応じて参考にしますが、*_test.goを作る必要はまったくないです。
+
+# Design and Internals
+
+- Cards are content addressed.
+- Media files are referenced in markdown using standard image syntax: `![](path/to/file.ext)`. Standard image and AV formats are supported.
+
+# Rules
+
+- When fixing bugs, add a failing regression test first.
+- All errors are user-facing, so messages should be clear.
+- Keep functions small and focused.
+- Module files should re-export what's needed, hide implementation details.
+- Don't persist changes to the database during drilling. Use the cache.
+- Don't use timezones: dates are naive for a reason. Due dates etc. are more like the dates in a journal entry than precise points in time.
+
+
