@@ -4,6 +4,5 @@
 !go.sum
 !main.go
 !internal/
-!static/
 
 !config.toml

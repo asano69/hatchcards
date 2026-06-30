@@ -117,7 +117,6 @@ func Register(
 	cache *drillcache.Cache,
 	database *db.Database,
 	done chan<- struct{},
-	staticDir string,
 	collectionRoot string,
 	answerControls string,
 	mountPath string,
@@ -135,7 +134,6 @@ func Register(
 		cache:          cache,
 		db:             database,
 		done:           done,
-		staticDir:      staticDir,
 		collectionRoot: collectionRoot,
 		macros:         macros,
 		answerControls: answerControls,
@@ -191,7 +189,6 @@ type handler struct {
 	done           chan<- struct{}
 	sessionSaved   bool
 	endedAt        time.Time
-	staticDir      string
 	collectionRoot string
 	macros         [][2]string
 	answerControls string
@@ -423,10 +420,7 @@ func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
 // executes the "base" named template. Parsing on each request is acceptable
 // for a flashcard app and keeps the code simple.
 func (h *handler) renderTemplate(w http.ResponseWriter, page string, data any) {
-	tmpl, err := template.ParseFiles(
-		filepath.Join(h.staticDir, "templates", "base.html"),
-		filepath.Join(h.staticDir, "templates", page),
-	)
+	tmpl, err := assets.ParseTemplate(page)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
 		return

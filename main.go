@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -147,10 +146,7 @@ func orphansDeleteCmd() *cobra.Command {
 // -------------------------------------------------------------------------
 
 func serveCmd() *cobra.Command {
-	var (
-		configPath string
-		staticDir  string
-	)
+	var configPath string
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start the web server for all configured drill sessions",
@@ -160,27 +156,10 @@ func serveCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config %s: %w", configPath, err)
 			}
-			if staticDir == "" {
-				staticDir = defaultStaticDir()
-			}
-			return serve.Run(cfg, staticDir, os.Stdout)
+			return serve.Run(cfg, os.Stdout)
 		},
 	}
 	cmd.Flags().StringVar(&configPath, "config", "config.toml",
 		"path to the TOML config file")
-	cmd.Flags().StringVar(&staticDir, "static", "",
-		"path to the static assets directory (default: ./static)")
 	return cmd
-}
-
-// defaultStaticDir returns the "static" directory relative to the binary or cwd.
-func defaultStaticDir() string {
-	exe, err := os.Executable()
-	if err == nil {
-		candidate := filepath.Join(filepath.Dir(exe), "static")
-		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
-			return candidate
-		}
-	}
-	return "static"
 }
