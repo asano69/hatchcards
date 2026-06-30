@@ -5,7 +5,6 @@ package serve
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 
 	"io"
 	"net"
@@ -73,15 +72,15 @@ func Run(cfg *config.Config, out io.Writer) error {
 		MaxInterval:  cfg.FSRS.MaxInterval,
 	}
 
-	router := mux.NewRouter()
+	router := http.NewServeMux()
 	// Serve embedded static assets under /static/.
-	router.PathPrefix("/static/").Handler(
+	router.Handle("/static/",
 		http.StripPrefix("/static/", http.FileServer(http.FS(assets.FS))),
 	)
 
 	// Serve KaTeX assets under /katex/ too, since katex.min.css references
 	// /katex/fonts/... with absolute paths.
-	router.PathPrefix("/katex/").Handler(
+	router.Handle("/katex/",
 		http.StripPrefix("/katex/", http.FileServer(http.FS(assets.Sub("katex")))),
 	)
 
@@ -90,15 +89,15 @@ func Run(cfg *config.Config, out io.Writer) error {
 	})
 
 	// /api/sessions returns the session list as JSON for backward compatibility.
-	router.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /api/sessions", func(w http.ResponseWriter, r *http.Request) {
 		sessionJSON, _ := json.Marshal(buildSessionList(cfg, col, database))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(sessionJSON)
-	}).Methods(http.MethodGet)
+	})
 
 	// /new — card registration form.
-	router.HandleFunc("/new", newCardGetHandler(cfg)).Methods(http.MethodGet)
-	router.HandleFunc("/new", newCardPostHandler(cfg, database)).Methods(http.MethodPost)
+	router.HandleFunc("GET /new", newCardGetHandler(cfg))
+	router.HandleFunc("POST /new", newCardPostHandler(cfg, database))
 
 	// /delete — pass db and collectionRoot so each request reloads the collection.
 	dh := &deleteHandler{
@@ -106,8 +105,8 @@ func Run(cfg *config.Config, out io.Writer) error {
 		db:             database,
 		collectionRoot: cfg.Data.Root,
 	}
-	router.HandleFunc("/delete", dh.handleGet).Methods(http.MethodGet)
-	router.HandleFunc("/delete", dh.handlePost).Methods(http.MethodPost)
+	router.HandleFunc("GET /delete", dh.handleGet)
+	router.HandleFunc("POST /delete", dh.handlePost)
 
 	// Register drill routes with more specific (longer) paths first to avoid
 	// the all-decks PathPrefix("/drill") intercepting named-deck requests.
@@ -134,13 +133,17 @@ func Run(cfg *config.Config, out io.Writer) error {
 	// Index page — server-rendered with Go templates, no client-side JS fetch needed.
 	// The collection is reloaded on every request so retrievability and card counts
 	// reflect cards added or deleted since the server started.
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
 		freshCol, err := collection.Load(cfg.Data.Root, database)
 		if err != nil {
 			freshCol = col
 		}
 		renderIndex(w, buildSessionList(cfg, freshCol, database))
-	}).Methods(http.MethodGet)
+	})
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	ln, err := net.Listen("tcp", addr)
@@ -226,7 +229,7 @@ func renderIndex(w http.ResponseWriter, sessions []sessionInfo) {
 
 // registerDrillRoute sets up a drill handler for one session.
 func registerDrillRoute(
-	router *mux.Router,
+	router *http.ServeMux,
 	sc config.SessionConfig,
 	col *collection.Collection,
 	database *db.Database,
@@ -284,9 +287,8 @@ func registerDrillRoute(
 	// done is buffered so the non-blocking send in handlers never panics.
 	done := make(chan struct{}, 1)
 
-	sub := router.PathPrefix(mountPath).Subrouter()
 	handlers.Register(
-		sub, &mu, sess, htmlCache, database,
+		router, &mu, sess, htmlCache, database,
 		done, col.Root, sc.AnswerControls, mountPath,
 		cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
 	)

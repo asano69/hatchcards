@@ -4,7 +4,6 @@ go 1.26.1
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/gorilla/mux v1.8.1
 	github.com/spf13/cobra v1.10.2
 	github.com/yuin/goldmark v1.8.2
 	github.com/zeebo/blake3 v0.2.4
