@@ -24,8 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"github.com/asano69/hashcards/internal/assets"
 	drillcache "github.com/asano69/hashcards/internal/cmd/drill/cache"
 	"github.com/asano69/hashcards/internal/cmd/drill/state"
@@ -112,7 +110,7 @@ func BurySiblings(due []collection.DueCard) []collection.DueCard {
 
 // Register attaches all drill routes to r.
 func Register(
-	r *mux.Router,
+	r *http.ServeMux,
 	mu *sync.Mutex,
 	sess *state.State,
 	cache *drillcache.Cache,
@@ -146,11 +144,13 @@ func Register(
 		fsrsCfg:        fsrsCfg,
 	}
 
-	r.HandleFunc("", h.getRoot).Methods(http.MethodGet)
-	r.HandleFunc("/", h.getRoot).Methods(http.MethodGet)
-	r.HandleFunc("", h.postRoot).Methods(http.MethodPost)
-	r.HandleFunc("/", h.postRoot).Methods(http.MethodPost)
-	r.PathPrefix("/file/").HandlerFunc(h.serveFile)
+	root := mountPath
+	rootSlash := mountPath + "/"
+	r.HandleFunc("GET "+root, h.getRoot)
+	r.HandleFunc("GET "+rootSlash, h.getRoot)
+	r.HandleFunc("POST "+root, h.postRoot)
+	r.HandleFunc("POST "+rootSlash, h.postRoot)
+	r.HandleFunc("GET "+rootSlash+"file/", h.serveFile)
 }
 
 // loadMacros reads a macros.tex file and returns (name, definition) pairs,
