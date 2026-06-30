@@ -1,7 +1,7 @@
 # go-hashcards
 
 > [!NOTE]
-> This project is [hashcards](https://github.com/eudoxia0/hashcards)'s go fork.
+> This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
 
 <dl>
     <dt>go-hashcards</dt>
