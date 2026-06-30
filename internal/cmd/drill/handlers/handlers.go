@@ -150,7 +150,7 @@ func Register(
 	r.HandleFunc("GET "+rootSlash, h.getRoot)
 	r.HandleFunc("POST "+root, h.postRoot)
 	r.HandleFunc("POST "+rootSlash, h.postRoot)
-	r.HandleFunc(rootSlash+"file/", h.serveFile)
+	r.HandleFunc("GET "+rootSlash+"file/", h.serveFile)
 }
 
 // loadMacros reads a macros.tex file and returns (name, definition) pairs,
