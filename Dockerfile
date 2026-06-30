@@ -6,7 +6,7 @@ COPY go.mod go.sum* ./
 RUN go mod download || true
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hashcards .
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hashcards ./cmd/hashcards
 
 
 # Stage 2: runtime
