@@ -2,23 +2,19 @@ BINARY := hashcards
 
 .PHONY: build
 build:
-	go build -o $(BINARY) ./cmd/hashcards
+	go build -o $(BINARY) ./cmd/$(BINARY)
 
-.PHONY: clean
-clean:
-	rm -f $(BINARY) && rm -f hashcards.db
 
-.PHONY: reset
-reset:
-	rm -f hashcards.db
+kill-ports:
+	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
 
 .PHONY: server
-server:
-	./hashcards serve --config=config.toml
+server: kill-ports
+	./$(BINARY) serve --config=config.toml
 
-init: build
+init: build kill-ports
 	#./hashcards migrate up --dir=pb_data
-	./hashcards superuser upsert admin@mail.internal password --dir=pb_data
+	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
 
 
 
