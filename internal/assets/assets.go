@@ -1,6 +1,4 @@
-// Package assets embeds the application's static files (HTML templates,
-// CSS, JavaScript, and vendored libraries like KaTeX) into the binary so
-// hashcards can ship as a single self-contained executable.
+// internal/assets/assets.go
 package assets
 
 import (
@@ -10,24 +8,36 @@ import (
 )
 
 //go:embed static
-var raw embed.FS
+var rawStatic embed.FS
 
-// FS is the embedded static tree, rooted so that paths like
-// "css/tokens.css" or "templates/base.html" match the old on-disk
-// static/ layout.
+//go:embed templates
+var rawTemplates embed.FS
+
+// FS is the embedded static tree (CSS, JS, KaTeX, favicon), served
+// publicly under /static/.
 var FS fs.FS
 
+// templatesFS is the embedded HTML template tree. Kept separate from FS
+// so templates are never exposed over HTTP.
+var templatesFS fs.FS
+
 func init() {
-	sub, err := fs.Sub(raw, "static")
+	sub, err := fs.Sub(rawStatic, "static")
 	if err != nil {
 		// Only fails if the embed directive itself is wrong; that's a
 		// build-time bug, not a runtime condition.
 		panic(err)
 	}
 	FS = sub
+
+	tsub, err := fs.Sub(rawTemplates, "templates")
+	if err != nil {
+		panic(err)
+	}
+	templatesFS = tsub
 }
 
-// Sub returns the embedded subtree rooted at dir (e.g. "katex").
+// Sub returns the embedded static subtree rooted at dir (e.g. "katex").
 func Sub(dir string) fs.FS {
 	sub, err := fs.Sub(FS, dir)
 	if err != nil {
@@ -39,5 +49,5 @@ func Sub(dir string) fs.FS {
 // ParseTemplate parses base.html together with the named page template
 // from the embedded templates/ directory.
 func ParseTemplate(page string) (*template.Template, error) {
-	return template.ParseFS(FS, "templates/base.html", "templates/"+page)
+	return template.ParseFS(templatesFS, "base.html", page)
 }
