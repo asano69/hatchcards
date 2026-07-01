@@ -18,3 +18,7 @@ hashcards is a plain-text spaced repetition system written in Rust. It parses Ma
 - Don't use timezones: dates are naive for a reason. Due dates etc. are more like the dates in a journal entry than precise points in time.
 
 
+# Work in progress
+
+- SSRからSPA/CSRに段階的に移行中。これまで、go-templateのみのアーキテクチャだったがPocketBaseやSolid.jsをつかう設計にかえた。その変更に伴い、PocketBaseが提供する仕組みをつかってDBを操作するように書き換えが必要になっている。
+
