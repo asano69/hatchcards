@@ -1,4 +1,4 @@
-# go-hashcards
+# hashcards
 <img src="internal/assets/static/favicon.svg" width="100" align="right" />
 A plain text-based spaced repetition system. Features:
 
