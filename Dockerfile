@@ -1,3 +1,12 @@
+# Stage 0: Node (vendor frontend assets via npm)
+FROM node:22-alpine AS node-builder
+WORKDIR /build
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
+COPY scripts ./scripts
+COPY internal/assets/static ./internal/assets/static
+RUN pnpm run sync-assets
+
 # Stage 1: Go
 FROM golang:1.26.1-alpine AS go-builder
 
