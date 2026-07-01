@@ -321,23 +321,41 @@ func (db *Database) UpdateCardPerformance(cardHash types.CardHash, perf types.Pe
 	return nil
 }
 
-// SaveSession / DeleteCard 以下:
-
 func (db *Database) SaveSession(startedAt types.Timestamp, endedAt types.Timestamp, reviews []ReviewRecord) error {
-	var sid string
-	err := db.app.RunInTransaction(func(txApp core.App) error {
-		if err := txApp.DB().NewQuery("insert into sessions (started_at, ended_at) values ({:s}, {:e}) returning id;").Bind(dbx.Params{"s": startedAt.String(), "e": endedAt.String()}).Row(&sid); err != nil {
+	sessionsCollection, err := db.app.FindCollectionByNameOrId("sessions")
+	if err != nil {
+		return errs.Newf("find sessions collection: %v", err)
+	}
+	reviewsCollection, err := db.app.FindCollectionByNameOrId("reviews")
+	if err != nil {
+		return errs.Newf("find reviews collection: %v", err)
+	}
+
+	return db.app.RunInTransaction(func(txApp core.App) error {
+		session := core.NewRecord(sessionsCollection)
+		session.Set("started_at", startedAt.String())
+		session.Set("ended_at", endedAt.String())
+		if err := txApp.Save(session); err != nil {
 			return errs.Newf("insert session: %v", err)
 		}
+
 		for _, r := range reviews {
-			_, err := txApp.DB().NewQuery(`insert into reviews (session_id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date) values ({:sid}, {:hash}, {:at}, {:grade}, {:st}, {:diff}, {:raw}, {:days}, {:due});`).Bind(dbx.Params{"sid": sid, "hash": r.CardHash.Hex(), "at": r.ReviewedAt.String(), "grade": r.Grade.String(), "st": r.Stability, "diff": r.Difficulty, "raw": r.IntervalRaw, "days": r.IntervalDays, "due": r.DueDate.String()}).Execute()
-			if err != nil {
+			review := core.NewRecord(reviewsCollection)
+			review.Set("session_id", session.Id)
+			review.Set("card_hash", r.CardHash.Hex())
+			review.Set("reviewed_at", r.ReviewedAt.String())
+			review.Set("grade", r.Grade.String())
+			review.Set("stability", r.Stability)
+			review.Set("difficulty", r.Difficulty)
+			review.Set("interval_raw", r.IntervalRaw)
+			review.Set("interval_days", r.IntervalDays)
+			review.Set("due_date", r.DueDate.String())
+			if err := txApp.Save(review); err != nil {
 				return errs.Newf("insert review: %v", err)
 			}
 		}
 		return nil
 	})
-	return err
 }
 
 func (db *Database) DeleteCard(cardHash types.CardHash) error {
@@ -368,72 +386,78 @@ func (db *Database) DeleteCard(cardHash types.CardHash) error {
 }
 
 func (db *Database) CountReviewsInDate(date types.Date) (int, error) {
-	var c int
-	err := db.q("select count(*) from reviews where substr(reviewed_at, 1, 10)={:d};", dbx.Params{"d": date.String()}).Row(&c)
+	// Reviews on `date` have reviewed_at in [date 00:00:00.000, nextDate 00:00:00.000),
+	// which works as a plain string range since the timestamp format is ISO8601-sortable.
+	start := date.String() + "T00:00:00.000"
+	end := types.NewDate(date.Time().AddDate(0, 0, 1)).String() + "T00:00:00.000"
+	records, err := db.app.FindRecordsByFilter(
+		"reviews", "reviewed_at >= {:start} && reviewed_at < {:end}", "", 0, 0,
+		dbx.Params{"start": start, "end": end},
+	)
 	if err != nil {
 		return 0, errs.Newf("count reviews in date: %v", err)
 	}
-	return c, nil
+	return len(records), nil
 }
 
 func (db *Database) GetAllSessions() ([]SessionRow, error) {
-	rows, err := db.q("select id, started_at, ended_at from sessions order by started_at;", nil).Rows()
+	records, err := db.app.FindRecordsByFilter("sessions", "", "+started_at", 0, 0)
 	if err != nil {
 		return nil, errs.Newf("query sessions: %v", err)
 	}
-	defer rows.Close()
-	var out []SessionRow
-	for rows.Next() {
-		var id string
-		var ss, es string
-		if err := rows.Scan(&id, &ss, &es); err != nil {
-			return nil, errs.Newf("scan session row: %v", err)
-		}
-		st, err := types.ParseTimestamp(ss)
+	out := make([]SessionRow, 0, len(records))
+	for _, r := range records {
+		st, err := types.ParseTimestamp(r.GetString("started_at"))
 		if err != nil {
 			return nil, err
 		}
-		en, err := types.ParseTimestamp(es)
+		en, err := types.ParseTimestamp(r.GetString("ended_at"))
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, SessionRow{id, st, en})
+		out = append(out, SessionRow{SessionID: r.Id, StartedAt: st, EndedAt: en})
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
 func (db *Database) GetReviewsForSession(sessionID string) ([]ReviewRow, error) {
-	rows, err := db.q(`select id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date from reviews where session_id={:sid} order by reviewed_at;`, dbx.Params{"sid": sessionID}).Rows()
+	records, err := db.app.FindRecordsByFilter(
+		"reviews", "session_id = {:sid}", "+reviewed_at", 0, 0, dbx.Params{"sid": sessionID},
+	)
 	if err != nil {
 		return nil, errs.Newf("query reviews for session: %v", err)
 	}
-	defer rows.Close()
-	var out []ReviewRow
-	for rows.Next() {
-		var id string
-		var hh, at, gr, dueS string
-		var st, diff, raw float64
-		var days int64
-		if err := rows.Scan(&id, &hh, &at, &gr, &st, &diff, &raw, &days, &dueS); err != nil {
-			return nil, errs.Newf("scan review row: %v", err)
-		}
-		h, err := types.ParseCardHash(hh)
+	out := make([]ReviewRow, 0, len(records))
+	for _, r := range records {
+		h, err := types.ParseCardHash(r.GetString("card_hash"))
 		if err != nil {
 			return nil, err
 		}
-		ts, err := types.ParseTimestamp(at)
+		ts, err := types.ParseTimestamp(r.GetString("reviewed_at"))
 		if err != nil {
 			return nil, err
 		}
-		grade, err := fsrs.ParseGrade(gr)
+		grade, err := fsrs.ParseGrade(r.GetString("grade"))
 		if err != nil {
 			return nil, errs.Newf("parse grade: %v", err)
 		}
-		due, err := types.ParseDate(dueS)
+		due, err := types.ParseDate(r.GetString("due_date"))
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, ReviewRow{ReviewID: id, Data: ReviewRecord{CardHash: h, ReviewedAt: ts, Grade: grade, Stability: st, Difficulty: diff, IntervalRaw: raw, IntervalDays: days, DueDate: due}})
+		out = append(out, ReviewRow{
+			ReviewID: r.Id,
+			Data: ReviewRecord{
+				CardHash:     h,
+				ReviewedAt:   ts,
+				Grade:        grade,
+				Stability:    r.GetFloat("stability"),
+				Difficulty:   r.GetFloat("difficulty"),
+				IntervalRaw:  r.GetFloat("interval_raw"),
+				IntervalDays: int64(r.GetInt("interval_days")),
+				DueDate:      due,
+			},
+		})
 	}
-	return out, rows.Err()
+	return out, nil
 }
