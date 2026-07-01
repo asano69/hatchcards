@@ -1,0 +1,52 @@
+[
+  {
+    "type": "Q",
+    "question": "你好",
+    "answer": "こんにちは"
+  },
+  {
+    "type": "Q",
+    "question": "谢谢",
+    "answer": "ありがとう"
+  },
+  {
+    "type": "Q",
+    "question": "再见",
+    "answer": "さようなら"
+  },
+  {
+    "type": "Q",
+    "question": "我爱你",
+    "answer": "愛しています"
+  },
+  {
+    "type": "Q",
+    "question": "Καλημέρα",
+    "answer": "おはようございます"
+  },
+  {
+    "type": "Q",
+    "question": "Ευχαριστώ",
+    "answer": "ありがとう"
+  },
+  {
+    "type": "Q",
+    "question": "Καληνύχτα",
+    "answer": "おやすみなさい"
+  },
+  {
+    "type": "Q",
+    "question": "안녕하세요",
+    "answer": "こんにちは"
+  },
+  {
+    "type": "Q",
+    "question": "감사합니다",
+    "answer": "ありがとうございます"
+  },
+  {
+    "type": "Q",
+    "question": "사랑해요",
+    "answer": "愛しています"
+  }
+]

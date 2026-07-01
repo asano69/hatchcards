@@ -1,0 +1,25 @@
+[
+  {
+    "type": "Q",
+    "question": "What does $\\euler$ evaluate to?",
+    "answer": "$0$"
+  },
+  {
+    "type": "Q",
+    "question": "State the first DeMorgan Law",
+    "answer": "$$\n\\neg \\left( P \\land Q \\right) \\equiv \\neg P \\lor \\neg Q\n$$"
+  },
+  {
+    "type": "Q",
+    "question": "What does `\\theta` render?",
+    "answer": "$\\theta$"
+  },
+  {
+    "type": "C",
+    "text": "The TeX command `\\alpha` renders as [$\\alpha$].\n\n---"
+  },
+  {
+    "type": "C",
+    "text": "Tables are also supported:\n\n| $A$ | $B$ | $A \\lor B$ |\n| --- | --- | ---------- |\n| F   | F   | [F]        | \n| F   | T   | [T]        | \n| T   | F   | [T]        | \n| T   | T   | [T]        |"
+  }
+]

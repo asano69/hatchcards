@@ -128,7 +128,7 @@ func walkDecks(root string) ([]types.Card, error) {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.ToLower(filepath.Ext(path)) == ".md" {
+		if !d.IsDir() && strings.ToLower(filepath.Ext(path)) == ".json" {
 			deckPaths = append(deckPaths, path)
 		}
 		return nil

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,23 +9,27 @@ import (
 	"github.com/asano69/hashcards/internal/types"
 )
 
-// writeDeck creates a temporary .md file with the given deck name stem and
+// writeDeck creates a temporary .json file with the given deck name stem and
 // returns its path. The file is cleaned up automatically via t.Cleanup.
 func writeDeck(t *testing.T, stem, content string) string {
 	t.Helper()
 	dir := t.TempDir()
-	path := filepath.Join(dir, stem+".md")
+	path := filepath.Join(dir, stem+".json")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("writeDeck: %v", err)
 	}
 	return path
 }
 
-// parseCards is a convenience wrapper around ParseFile that fails the test on
-// error and returns the parsed cards.
-func parseCards(t *testing.T, content string) []types.Card {
+// parseCards marshals entries to JSON, writes it as a deck file, and parses
+// it via ParseFile, failing the test on error.
+func parseCards(t *testing.T, entries []jsonCard) []types.Card {
 	t.Helper()
-	path := writeDeck(t, "test_deck", content)
+	data, err := json.Marshal(entries)
+	if err != nil {
+		t.Fatalf("marshal entries: %v", err)
+	}
+	path := writeDeck(t, "test_deck", string(data))
 	cards, err := ParseFile(path)
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
@@ -75,43 +80,38 @@ func assertCloze(t *testing.T, cards []types.Card, idx int, text string, start, 
 
 // ---- Basic card tests ----
 
-// TestEmptyString matches Rust's test_empty_string.
-func TestEmptyString(t *testing.T) {
-	cards := parseCards(t, "")
+func TestEmptyArray(t *testing.T) {
+	cards := parseCards(t, []jsonCard{})
 	if len(cards) != 0 {
 		t.Errorf("expected 0 cards, got %d", len(cards))
 	}
 }
 
-// TestWhitespaceString matches Rust's test_whitespace_string.
-func TestWhitespaceString(t *testing.T) {
-	cards := parseCards(t, "\n\n\n")
-	if len(cards) != 0 {
-		t.Errorf("expected 0 cards, got %d", len(cards))
-	}
-}
-
-// TestBasicCard matches Rust's test_basic_card.
 func TestBasicCard(t *testing.T) {
-	cards := parseCards(t, "Q: What is Rust?\nA: A systems programming language.")
+	cards := parseCards(t, []jsonCard{
+		{Type: "Q", Question: "What is Rust?", Answer: "A systems programming language."},
+	})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
 	assertBasic(t, cards, 0, "What is Rust?", "A systems programming language.")
 }
 
-// TestMultilineQA matches Rust's test_multiline_qa.
 func TestMultilineQA(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nbaz\nbaz\nA: FOO\nBAR\nBAZ")
+	cards := parseCards(t, []jsonCard{
+		{Type: "Q", Question: "foo\nbaz\nbaz", Answer: "FOO\nBAR\nBAZ"},
+	})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
 	assertBasic(t, cards, 0, "foo\nbaz\nbaz", "FOO\nBAR\nBAZ")
 }
 
-// TestTwoQuestions matches Rust's test_two_questions.
 func TestTwoQuestions(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nA: bar\n\nQ: baz\nA: quux\n\n")
+	cards := parseCards(t, []jsonCard{
+		{Type: "Q", Question: "foo", Answer: "bar"},
+		{Type: "Q", Question: "baz", Answer: "quux"},
+	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -121,9 +121,11 @@ func TestTwoQuestions(t *testing.T) {
 
 // ---- Cloze card tests ----
 
-// TestClozeFollowedByQuestion matches Rust's test_cloze_followed_by_question.
 func TestClozeFollowedByQuestion(t *testing.T) {
-	cards := parseCards(t, "C: [foo]\nQ: Question\nA: Answer")
+	cards := parseCards(t, []jsonCard{
+		{Type: "C", Text: "[foo]"},
+		{Type: "Q", Question: "Question", Answer: "Answer"},
+	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -131,18 +133,16 @@ func TestClozeFollowedByQuestion(t *testing.T) {
 	assertBasic(t, cards, 1, "Question", "Answer")
 }
 
-// TestClozeSingle matches Rust's test_cloze_single.
 func TestClozeSingle(t *testing.T) {
-	cards := parseCards(t, "C: Foo [bar] baz.")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "Foo [bar] baz."}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
 	assertCloze(t, cards, 0, "Foo bar baz.", 4, 6)
 }
 
-// TestClozeMultiple matches Rust's test_cloze_multiple.
 func TestClozeMultiple(t *testing.T) {
-	cards := parseCards(t, "C: Foo [bar] baz [quux].")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "Foo [bar] baz [quux]."}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -150,9 +150,8 @@ func TestClozeMultiple(t *testing.T) {
 	assertCloze(t, cards, 1, "Foo bar baz quux.", 12, 15)
 }
 
-// TestClozeWithImage matches Rust's test_cloze_with_image.
 func TestClozeWithImage(t *testing.T) {
-	cards := parseCards(t, "C: Foo [bar] ![](image.jpg) [quux].")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "Foo [bar] ![](image.jpg) [quux]."}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -160,27 +159,24 @@ func TestClozeWithImage(t *testing.T) {
 	assertCloze(t, cards, 1, "Foo bar ![](image.jpg) quux.", 23, 26)
 }
 
-// TestClozeWithEscapedSquareBracket matches Rust's test_cloze_with_escaped_square_bracket.
 func TestClozeWithEscapedSquareBracket(t *testing.T) {
-	cards := parseCards(t, "C: Key: [`\\[`]")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "Key: [`\\[`]"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
 	assertCloze(t, cards, 0, "Key: `[`", 5, 7)
 }
 
-// TestClozeWithMultipleEscapedBrackets matches Rust's test_cloze_with_multiple_escaped_square_brackets.
 func TestClozeWithMultipleEscapedBrackets(t *testing.T) {
-	cards := parseCards(t, "C: \\[markdown\\] [`\\[cloze\\]`]")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "\\[markdown\\] [`\\[cloze\\]`]"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
 	assertCloze(t, cards, 0, "[markdown] `[cloze]`", 11, 19)
 }
 
-// TestMultiLineCloze matches Rust's test_multi_line_cloze.
 func TestMultiLineCloze(t *testing.T) {
-	cards := parseCards(t, "C: [foo]\n[bar]\nbaz.")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "[foo]\n[bar]\nbaz."}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -188,9 +184,11 @@ func TestMultiLineCloze(t *testing.T) {
 	assertCloze(t, cards, 1, "foo\nbar\nbaz.", 4, 6)
 }
 
-// TestTwoClozes matches Rust's test_two_clozes.
 func TestTwoClozes(t *testing.T) {
-	cards := parseCards(t, "C: [foo]\nC: [bar]")
+	cards := parseCards(t, []jsonCard{
+		{Type: "C", Text: "[foo]"},
+		{Type: "C", Text: "[bar]"},
+	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -198,10 +196,9 @@ func TestTwoClozes(t *testing.T) {
 	assertCloze(t, cards, 1, "bar", 0, 2)
 }
 
-// TestClozeWithInitialBlankLine matches Rust's test_cloze_with_initial_blank_line.
 func TestClozeWithInitialBlankLine(t *testing.T) {
-	input := "C:\nBuild something people want in Lisp.\n\n\u2014 [Paul Graham], [_Hackers and Painters_]\n\n"
-	cards := parseCards(t, input)
+	text := "\nBuild something people want in Lisp.\n\n\u2014 [Paul Graham], [_Hackers and Painters_]\n\n"
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: text}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -212,39 +209,42 @@ func TestClozeWithInitialBlankLine(t *testing.T) {
 
 // ---- Deduplication tests ----
 
-// TestIdenticalBasicCards matches Rust's test_identical_basic_cards.
 func TestIdenticalBasicCards(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nA: bar\n\nQ: foo\nA: bar\n\n")
+	cards := parseCards(t, []jsonCard{
+		{Type: "Q", Question: "foo", Answer: "bar"},
+		{Type: "Q", Question: "foo", Answer: "bar"},
+	})
 	if len(cards) != 1 {
 		t.Errorf("expected 1 card after dedup, got %d", len(cards))
 	}
 }
 
-// TestIdenticalClozeCards matches Rust's test_identical_cloze_cards.
 func TestIdenticalClozeCards(t *testing.T) {
-	cards := parseCards(t, "C: foo [bar]\n\nC: foo [bar]")
+	cards := parseCards(t, []jsonCard{
+		{Type: "C", Text: "foo [bar]"},
+		{Type: "C", Text: "foo [bar]"},
+	})
 	if len(cards) != 1 {
 		t.Errorf("expected 1 card after dedup, got %d", len(cards))
 	}
 }
 
-// TestIdenticalCardsAcrossFiles matches Rust's test_identical_cards_across_files.
 func TestIdenticalCardsAcrossFiles(t *testing.T) {
 	dir := t.TempDir()
-	content := "Q: foo\nA: bar"
-	for _, name := range []string{"file1.md", "file2.md"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// parseDeck collects all .md files in a directory.
-	// Since there's no exported parseDeck in Go, we call ParseFile for each file
-	// and check that the hashes are equal (simulating dedup behaviour).
-	cards1, err := ParseFile(filepath.Join(dir, "file1.md"))
+	data, err := json.Marshal([]jsonCard{{Type: "Q", Question: "foo", Answer: "bar"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	cards2, err := ParseFile(filepath.Join(dir, "file2.md"))
+	for _, name := range []string{"file1.json", "file2.json"} {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cards1, err := ParseFile(filepath.Join(dir, "file1.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cards2, err := ParseFile(filepath.Join(dir, "file2.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,78 +256,10 @@ func TestIdenticalCardsAcrossFiles(t *testing.T) {
 	}
 }
 
-// ---- Separator tests ----
+// ---- Deck name tests ----
 
-// TestSeparatorBetweenBasicCards matches Rust's test_separator_between_basic_cards.
-func TestSeparatorBetweenBasicCards(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nA: bar\n---\nQ: baz\nA: quux")
-	if len(cards) != 2 {
-		t.Fatalf("expected 2 cards, got %d", len(cards))
-	}
-	assertBasic(t, cards, 0, "foo", "bar")
-	assertBasic(t, cards, 1, "baz", "quux")
-}
-
-// TestSeparatorAfterClozeCard matches Rust's test_separator_after_cloze_card.
-func TestSeparatorAfterClozeCard(t *testing.T) {
-	cards := parseCards(t, "C: [foo]\n---\nQ: Question\nA: Answer")
-	if len(cards) != 2 {
-		t.Fatalf("expected 2 cards, got %d", len(cards))
-	}
-	assertCloze(t, cards, 0, "foo", 0, 2)
-	assertBasic(t, cards, 1, "Question", "Answer")
-}
-
-// TestSeparatorBetweenClozeCards matches Rust's test_separator_between_cloze_cards.
-func TestSeparatorBetweenClozeCards(t *testing.T) {
-	cards := parseCards(t, "C: [foo]\n---\nC: [bar]")
-	if len(cards) != 2 {
-		t.Fatalf("expected 2 cards, got %d", len(cards))
-	}
-	assertCloze(t, cards, 0, "foo", 0, 2)
-	assertCloze(t, cards, 1, "bar", 0, 2)
-}
-
-// TestMultipleSeparators matches Rust's test_multiple_separators.
-func TestMultipleSeparators(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nA: bar\n---\n---\nQ: baz\nA: quux")
-	if len(cards) != 2 {
-		t.Fatalf("expected 2 cards, got %d", len(cards))
-	}
-	assertBasic(t, cards, 0, "foo", "bar")
-	assertBasic(t, cards, 1, "baz", "quux")
-}
-
-// TestSeparatorAtEnd matches Rust's test_separator_at_end.
-func TestSeparatorAtEnd(t *testing.T) {
-	cards := parseCards(t, "Q: foo\nA: bar\n---")
-	if len(cards) != 1 {
-		t.Fatalf("expected 1 card, got %d", len(cards))
-	}
-	assertBasic(t, cards, 0, "foo", "bar")
-}
-
-// ---- Frontmatter tests ----
-
-// TestFrontmatterWithName matches Rust's test_extract_frontmatter_with_name.
-func TestFrontmatterWithName(t *testing.T) {
-	input := "---\nname = \"My Deck\"\n---\n\nQ: What is Rust?\nA: A systems programming language."
-	path := writeDeck(t, "chapter1", input)
-	cards, err := ParseFile(path)
-	if err != nil {
-		t.Fatalf("ParseFile: %v", err)
-	}
-	if len(cards) != 1 {
-		t.Fatalf("expected 1 card, got %d", len(cards))
-	}
-	if cards[0].DeckName() != "My Deck" {
-		t.Errorf("DeckName = %q, want %q", cards[0].DeckName(), "My Deck")
-	}
-}
-
-// TestFrontmatterAbsent verifies the deck name defaults to the filename stem.
-func TestFrontmatterAbsent(t *testing.T) {
-	path := writeDeck(t, "MyDeck", "Q: foo\nA: bar")
+func TestDeckNameFromFilename(t *testing.T) {
+	path := writeDeck(t, "MyDeck", `[{"type":"Q","question":"foo","answer":"bar"}]`)
 	cards, err := ParseFile(path)
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
@@ -342,9 +274,8 @@ func TestFrontmatterAbsent(t *testing.T) {
 
 // ---- Special character tests ----
 
-// TestClozeDeletionWithExclamationSign matches Rust's test_cloze_deletion_with_exclamation_sign.
 func TestClozeDeletionWithExclamationSign(t *testing.T) {
-	cards := parseCards(t, "C: The notation [$n!$] means 'n factorial'.")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "The notation [$n!$] means 'n factorial'."}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -358,9 +289,8 @@ func TestClozeDeletionWithExclamationSign(t *testing.T) {
 	}
 }
 
-// TestClozeDeletionWithMath matches Rust's test_cloze_deletion_with_math.
 func TestClozeDeletionWithMath(t *testing.T) {
-	cards := parseCards(t, "C: The string `\\alpha` renders as [$\\alpha$].")
+	cards := parseCards(t, []jsonCard{{Type: "C", Text: "The string `\\alpha` renders as [$\\alpha$]."}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -368,5 +298,21 @@ func TestClozeDeletionWithMath(t *testing.T) {
 	wantText := "The string `\\alpha` renders as $\\alpha$."
 	if cc.Text != wantText {
 		t.Errorf("Text = %q, want %q", cc.Text, wantText)
+	}
+}
+
+// ---- Error handling ----
+
+func TestUnknownCardType(t *testing.T) {
+	path := writeDeck(t, "bad_deck", `[{"type":"X"}]`)
+	if _, err := ParseFile(path); err == nil {
+		t.Error("expected error for unknown card type, got nil")
+	}
+}
+
+func TestInvalidJSON(t *testing.T) {
+	path := writeDeck(t, "bad_deck", `not json`)
+	if _, err := ParseFile(path); err == nil {
+		t.Error("expected error for invalid JSON, got nil")
 	}
 }
