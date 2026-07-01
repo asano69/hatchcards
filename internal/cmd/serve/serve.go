@@ -56,10 +56,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
-	})
-
 	// GET /api/sessions reloads the collection from disk on every request so
 	// that decks/cards added or removed since startup are reflected in the
 	// session list and the retrievability percentages shown on the index
@@ -121,7 +117,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		e.Router.GET("/static/{path...}", apis.Static(assets.FS, false))
-		e.Router.GET("/katex/{path...}", apis.Static(assets.Sub("katex"), false))
 		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
 		return e.Next()
 	})

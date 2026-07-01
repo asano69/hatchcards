@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 
 export default defineConfig({
+  base: "/static/",
   plugins: [solid()],
   server: {
     host: "0.0.0.0",
@@ -18,12 +19,5 @@ export default defineConfig({
   build: {
     outDir: "../internal/assets/static/dist",
     emptyOutDir: true,
-    rollupOptions: {
-      input: "src/main.jsx",
-      output: {
-        entryFileNames: "index.js",
-        assetFileNames: "index.[ext]",
-      },
-    },
   },
 });

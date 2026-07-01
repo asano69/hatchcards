@@ -3,17 +3,14 @@ BINARY := hashcards
 frontend-deps:
 	cd frontend && pnpm install
 
-.PHONY: sync-assets
-sync-assets: frontend-deps
-	node scripts/sync-assets.mjs
-
 .PHONY: build-frontend
 build-frontend: frontend-deps
 	cd frontend && pnpm run build
 
 .PHONY: build
-build: sync-assets build-frontend
+build: build-frontend
 	go build -o $(BINARY) ./cmd/$(BINARY)
+
 
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
