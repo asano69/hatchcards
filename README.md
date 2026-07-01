@@ -1,5 +1,5 @@
 # go-hashcards
-<img src="static/favicon.svg" width="100" align="right" />
+<img src="internal/assets/static/favicon.svg" width="100" align="right" />
 A plain text-based spaced repetition system. Features:
 
 - **Plain Text:** all your flashcards are stored as plain text files, so you can
