@@ -1,22 +1,20 @@
-// Package handlers implements the HTTP handlers for the drill server.
+// Package handlers implements the JSON drill API.
 //
-// Actions handled by POST <mountPath>/:
+// The drill session state (queue, completed reviews, revealed flag) lives
+// server-side in a state.State per configured deck, same as before. Only the
+// transport changed: instead of full-page form POSTs returning rendered
+// HTML, the client calls a small JSON API and re-renders itself.
 //
-//	Reveal     — flip the card to show the answer
-//	Forgot     — grade the card and advance
-//	Hard       — grade the card and advance
-//	Good       — grade the card and advance
-//	Easy       — grade the card and advance
-//	Undo       — reverse the most recent grade
-//	End        — end the session early (saves progress)
-//	Reset      — discard the session without saving and return home
-//	ReturnHome — save current session and start a new one
+// Endpoints:
+//
+//	GET  /api/drill/state?deck=<path>   — current session state as JSON
+//	POST /api/drill/action?deck=<path>  — apply an action, returns new state
+//	GET  /drill/file/{path...}          — media files (deck-independent)
 package handlers
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asano69/hashcards/internal/assets"
 	drillcache "github.com/asano69/hashcards/internal/cmd/drill/cache"
 	"github.com/asano69/hashcards/internal/cmd/drill/state"
 	"github.com/asano69/hashcards/internal/collection"
@@ -49,8 +46,12 @@ var mimeTypes = map[string]string{
 	".webm": "video/webm",
 }
 
-// shortHash returns the first 7 characters of a card hash hex string,
-// matching the convention used by git and similar tools.
+// fileMountBase is the fixed URL prefix used to rewrite <img>/<audio> src
+// attributes during rendering. It no longer varies per deck since file
+// serving is now a single shared route.
+const fileMountBase = "/drill"
+
+// shortHash returns the first 7 characters of a card hash hex string.
 func shortHash(h types.CardHash) string {
 	s := h.Hex()
 	if len(s) > 7 {
@@ -108,92 +109,177 @@ func BurySiblings(due []collection.DueCard) []collection.DueCard {
 	return result
 }
 
-// Register attaches all drill routes to r.
-func Register(
-	r *http.ServeMux,
-	mu *sync.Mutex,
-	sess *state.State,
-	cache *drillcache.Cache,
+// -------------------------------------------------------------------------
+// Manager — one handler per configured deck, keyed by URL path segment.
+// -------------------------------------------------------------------------
+
+// Manager dispatches drill state/action requests to the right per-deck
+// handler. "" is the key for the "all decks" session.
+type Manager struct {
+	sessions map[string]*handler
+}
+
+func NewManager() *Manager {
+	return &Manager{sessions: make(map[string]*handler)}
+}
+
+// AddSession creates and registers a handler for one configured deck.
+func (m *Manager) AddSession(
+	deckKey string,
+	col *collection.Collection,
 	database *db.Database,
-	done chan<- struct{},
-	collectionRoot string,
 	answerControls string,
-	mountPath string,
 	cardLimit *int,
 	newCardLimit *int,
 	deckFilter *string,
 	burySiblings bool,
 	fsrsCfg fsrs.FSRSConfig,
-) {
-	macros := loadMacros(filepath.Join(collectionRoot, "macros.tex"))
+) error {
+	due, err := col.DueToday(types.Today())
+	if err != nil {
+		return err
+	}
+	due = FilterDue(due, cardLimit, newCardLimit, deckFilter)
+	if burySiblings {
+		due = BurySiblings(due)
+	}
+
+	// Shuffle before filtering so new-card selection is random rather than
+	// always picking the same cards in hash order.
+	r := rng.FromSeed(uint64(time.Now().UnixNano()))
+	due = rng.Shuffle(due, r)
+	due = FilterDue(due, cardLimit, newCardLimit, deckFilter)
+	if burySiblings {
+		due = BurySiblings(due)
+	}
 
 	h := &handler{
-		mu:             mu,
-		sess:           sess,
-		cache:          cache,
+		mu:             &sync.Mutex{},
+		sess:           state.New(due, r, fsrsCfg),
+		cache:          drillcache.Build(due, fileMountBase),
 		db:             database,
-		done:           done,
-		collectionRoot: collectionRoot,
-		macros:         macros,
+		col:            col,
+		macros:         loadMacros(filepath.Join(col.Root, "macros.tex")),
 		answerControls: answerControls,
-		mountPath:      mountPath,
 		cardLimit:      cardLimit,
 		newCardLimit:   newCardLimit,
 		deckFilter:     deckFilter,
 		burySiblingsOn: burySiblings,
 		fsrsCfg:        fsrsCfg,
 	}
+	m.sessions[deckKey] = h
 
-	root := mountPath
-	rootSlash := mountPath + "/"
-	r.HandleFunc("GET "+root, h.getRoot)
-	r.HandleFunc("GET "+rootSlash, h.getRoot)
-	r.HandleFunc("POST "+root, h.postRoot)
-	r.HandleFunc("POST "+rootSlash, h.postRoot)
-	r.HandleFunc("GET "+rootSlash+"file/", h.serveFile)
+	deckLabel := "all decks"
+	if deckFilter != nil {
+		deckLabel = fmt.Sprintf("deck=%q", *deckFilter)
+	}
+	fmt.Printf("[session] key=%q %s cards=%d\n", deckKey, deckLabel, len(due))
+	return nil
 }
 
-// loadMacros reads a macros.tex file and returns (name, definition) pairs,
-// skipping comment lines that start with '%'.
-func loadMacros(path string) [][2]string {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil
-	}
-	defer f.Close()
-
-	var macros [][2]string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(strings.TrimSpace(line), "%") {
-			continue
-		}
-		idx := strings.IndexByte(line, ' ')
-		if idx < 0 {
-			continue
-		}
-		name := line[:idx]
-		definition := strings.TrimSpace(line[idx+1:])
-		if name != "" && definition != "" {
-			macros = append(macros, [2]string{name, definition})
-		}
-	}
-	return macros
+func (m *Manager) get(deckKey string) (*handler, bool) {
+	h, ok := m.sessions[deckKey]
+	return h, ok
 }
+
+// RegisterAPI attaches the JSON drill API and the shared media route to r.
+func RegisterAPI(r *http.ServeMux, m *Manager) {
+	r.HandleFunc("GET /api/drill/state", m.handleState)
+	r.HandleFunc("POST /api/drill/action", m.handleAction)
+	r.HandleFunc("GET /drill/file/{path...}", m.handleFile)
+}
+
+func (m *Manager) handleState(w http.ResponseWriter, r *http.Request) {
+	h, ok := m.get(r.URL.Query().Get("deck"))
+	if !ok {
+		http.Error(w, `{"error":"unknown deck"}`, http.StatusNotFound)
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// If no reviews have started yet, reload due cards from disk so that
+	// cards added or deleted since the session was created are reflected.
+	if len(h.sess.Done) == 0 && !h.sess.Revealed && !h.sess.IsFinished() {
+		h.resetSession()
+	}
+	writeJSON(w, h.stateResponse())
+}
+
+func (m *Manager) handleAction(w http.ResponseWriter, r *http.Request) {
+	h, ok := m.get(r.URL.Query().Get("deck"))
+	if !ok {
+		http.Error(w, `{"error":"unknown deck"}`, http.StatusNotFound)
+		return
+	}
+	var body struct {
+		Action string `json:"action"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"bad request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.applyAction(body.Action)
+	writeJSON(w, h.stateResponse())
+}
+
+// handleFile serves a media file from the collection root. It is shared by
+// every deck since collectionRoot is the same collection.Collection for all
+// sessions.
+func (m *Manager) handleFile(w http.ResponseWriter, r *http.Request) {
+	var root string
+	for _, h := range m.sessions {
+		root = h.col.Root
+		break
+	}
+	if root == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	relPath := strings.TrimPrefix(r.URL.Path, "/drill/file/")
+	if strings.Contains(relPath, "..") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	absPath := filepath.Join(root, filepath.FromSlash(relPath))
+
+	info, err := os.Stat(absPath)
+	if err != nil || !info.Mode().IsRegular() {
+		http.NotFound(w, r)
+		return
+	}
+	ext := strings.ToLower(filepath.Ext(absPath))
+	ct, ok := mimeTypes[ext]
+	if !ok {
+		ct = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", ct)
+	http.ServeFile(w, r, absPath)
+}
+
+func writeJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+// -------------------------------------------------------------------------
+// Per-deck handler
+// -------------------------------------------------------------------------
 
 type handler struct {
 	mu             *sync.Mutex
 	sess           *state.State
 	cache          *drillcache.Cache
 	db             *db.Database
-	done           chan<- struct{}
+	col            *collection.Collection
 	sessionSaved   bool
 	endedAt        time.Time
-	collectionRoot string
 	macros         [][2]string
 	answerControls string
-	mountPath      string
 	cardLimit      *int
 	newCardLimit   *int
 	deckFilter     *string
@@ -201,47 +287,11 @@ type handler struct {
 	fsrsCfg        fsrs.FSRSConfig
 }
 
-// -------------------------------------------------------------------------
-// GET handler
-// -------------------------------------------------------------------------
-func (h *handler) getRoot(w http.ResponseWriter, r *http.Request) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	// If no reviews have been started yet, reload the session from disk so
-	// that cards added or deleted since server startup are reflected
-	// immediately without waiting for a session to complete.
-	if len(h.sess.Done) == 0 && !h.sess.Revealed && !h.sess.IsFinished() {
-		h.resetSession()
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if h.sess.Total() == 0 {
-		h.renderNoCards(w)
-		return
-	}
-	if h.sess.IsFinished() {
-		h.renderDone(w)
-		return
-	}
-	h.renderCard(w)
-}
-
-// -------------------------------------------------------------------------
-// POST handler
-// -------------------------------------------------------------------------
-
-func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form data", http.StatusBadRequest)
-		return
-	}
-	action := r.FormValue("action")
-
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
+// applyAction mutates session state in response to a client action. It
+// replaces the old postRoot switch-case; the only behavioural difference is
+// that no HTTP redirect happens here — the client decides what to do next
+// based on the returned status.
+func (h *handler) applyAction(action string) {
 	switch action {
 	case "Reveal":
 		if !h.sess.IsFinished() {
@@ -255,24 +305,18 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 		h.finishSession()
 
 	case "Reset":
-		// Discard the current session without saving, reload fresh due cards,
-		// and return the user to the home page.
+		// Discard the current session without saving and reload fresh due
+		// cards. The client is responsible for navigating back to "/".
 		h.resetSession()
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
 
 	case "ReturnHome":
 		h.finishSession()
 		h.resetSession()
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
 
 	case "Forgot", "Hard", "Good", "Easy":
 		if !h.sess.IsFinished() && h.sess.Revealed {
 			grade := actionToGrade(action)
 
-			// Capture the current card's performance before grading so we
-			// can log the before/after delta.
 			var beforeStability, beforeDifficulty float64
 			var beforeInterval int64
 			if dc, ok := h.sess.Current(); ok {
@@ -300,7 +344,6 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	http.Redirect(w, r, h.mountPath+"/", http.StatusSeeOther)
 }
 
 // finishSession saves the session to the database and marks it as finished.
@@ -335,11 +378,13 @@ func (h *handler) finishSession() {
 // resetSession loads fresh due cards and replaces the current session state.
 // Nothing from the current session is written to the database.
 func (h *handler) resetSession() {
-	col, err := collection.Load(h.collectionRoot, h.db)
+	col, err := collection.Load(h.col.Root, h.db)
 	if err != nil {
 		fmt.Printf("[session] warning: reset session load: %v\n", err)
 		return
 	}
+	h.col = col
+
 	due, err := col.DueToday(types.Today())
 	if err != nil {
 		fmt.Printf("[session] warning: reset session due today: %v\n", err)
@@ -350,8 +395,6 @@ func (h *handler) resetSession() {
 		due = BurySiblings(due)
 	}
 
-	// Shuffle before filtering so that new card selection is random rather
-	// than always picking the same cards in hash order.
 	r := rng.FromSeed(uint64(time.Now().UnixNano()))
 	due = rng.Shuffle(due, r)
 	due = FilterDue(due, h.cardLimit, h.newCardLimit, h.deckFilter)
@@ -360,7 +403,7 @@ func (h *handler) resetSession() {
 	}
 	h.sess = state.New(due, r, h.fsrsCfg)
 
-	h.cache = drillcache.Build(due, h.mountPath)
+	h.cache = drillcache.Build(due, fileMountBase)
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
 
@@ -382,156 +425,113 @@ func actionToGrade(action string) fsrs.Grade {
 	}
 }
 
-// -------------------------------------------------------------------------
-// /file/ handler
-// -------------------------------------------------------------------------
-
-// serveFile serves a media file from the collection root directory.
-// Directory traversal via ".." components is rejected.
-func (h *handler) serveFile(w http.ResponseWriter, r *http.Request) {
-	relPath := strings.TrimPrefix(r.URL.Path, h.mountPath+"/file/")
-
-	if strings.Contains(relPath, "..") {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
-	absPath := filepath.Join(h.collectionRoot, filepath.FromSlash(relPath))
-
-	info, err := os.Stat(absPath)
-	if err != nil || !info.Mode().IsRegular() {
-		http.NotFound(w, r)
-		return
-	}
-
-	ext := strings.ToLower(filepath.Ext(absPath))
-	ct, ok := mimeTypes[ext]
-	if !ok {
-		ct = "application/octet-stream"
-	}
-	w.Header().Set("Content-Type", ct)
-	http.ServeFile(w, r, absPath)
-}
-
-// -------------------------------------------------------------------------
-// Template rendering
-// -------------------------------------------------------------------------
-
-// renderTemplate parses base.html and the named page template together, then
-// executes the "base" named template. Parsing on each request is acceptable
-// for a flashcard app and keeps the code simple.
-func (h *handler) renderTemplate(w http.ResponseWriter, page string, data any) {
-	tmpl, err := assets.ParseTemplate(page)
+// loadMacros reads a macros.tex file and returns (name, definition) pairs,
+// skipping comment lines that start with '%'.
+func loadMacros(path string) [][2]string {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
-		return
+		return nil
 	}
-	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
-		fmt.Printf("template render error (%s): %v\n", page, err)
+	var macros [][2]string
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "%") {
+			continue
+		}
+		idx := strings.IndexByte(line, ' ')
+		if idx < 0 {
+			continue
+		}
+		name := line[:idx]
+		definition := strings.TrimSpace(line[idx+1:])
+		if name != "" && definition != "" {
+			macros = append(macros, [2]string{name, definition})
+		}
 	}
+	return macros
 }
 
-func (h *handler) renderCard(w http.ResponseWriter) {
+func macrosMap(pairs [][2]string) map[string]string {
+	m := make(map[string]string, len(pairs))
+	for _, p := range pairs {
+		m[p[0]] = p[1]
+	}
+	return m
+}
+
+// -------------------------------------------------------------------------
+// JSON response shapes
+// -------------------------------------------------------------------------
+
+type stateResponse struct {
+	Status string         `json:"status"` // "no_cards" | "card" | "done"
+	Card   *cardStateJSON `json:"card,omitempty"`
+	Done   *doneStateJSON `json:"done,omitempty"`
+}
+
+type cardStateJSON struct {
+	DeckName       string            `json:"deckName"`
+	Front          string            `json:"front"`
+	Back           string            `json:"back"`
+	Revealed       bool              `json:"revealed"`
+	CanUndo        bool              `json:"canUndo"`
+	ReviewedCount  int               `json:"reviewedCount"`
+	Total          int               `json:"total"`
+	ProgressPct    int               `json:"progressPct"`
+	AnswerControls string            `json:"answerControls"`
+	Macros         map[string]string `json:"macros"`
+}
+
+type doneStateJSON struct {
+	Reviewed    int   `json:"reviewed"`
+	Total       int   `json:"total"`
+	DurationSec int64 `json:"durationSec"`
+}
+
+func (h *handler) stateResponse() stateResponse {
+	if h.sess.Total() == 0 {
+		return stateResponse{Status: "no_cards"}
+	}
+	if h.sess.IsFinished() {
+		var durationSec int64
+		if !h.endedAt.IsZero() {
+			durationSec = int64(h.endedAt.Sub(h.sess.StartedAt.Time()).Seconds())
+		}
+		return stateResponse{
+			Status: "done",
+			Done: &doneStateJSON{
+				Reviewed:    h.sess.ReviewedCount(),
+				Total:       h.sess.Total(),
+				DurationSec: durationSec,
+			},
+		}
+	}
+
 	dc, _ := h.sess.Current()
 	entry, ok := h.cache.Get(dc.Card.Hash())
 	if !ok {
-		http.Error(w, "card not found in cache", http.StatusInternalServerError)
-		return
+		// Card missing from the pre-render cache — fall back rather than
+		// serving a broken response.
+		return stateResponse{Status: "no_cards"}
 	}
-
 	total := h.sess.Total()
 	done := h.sess.ReviewedCount()
 	percent := 0
 	if total > 0 {
 		percent = done * 100 / total
 	}
-
-	data := cardData{
-		DeckName:       dc.Card.DeckName(),
-		Front:          template.HTML(entry.Front),
-		Back:           template.HTML(entry.Back),
-		Revealed:       h.sess.Revealed,
-		CanUndo:        len(h.sess.Done) > 0,
-		Done:           done,
-		Total:          total,
-		ProgressPct:    percent,
-		MacrosJS:       h.macrosJS(),
-		AnswerControls: h.answerControls,
-		BasePath:       h.mountPath + "/",
+	return stateResponse{
+		Status: "card",
+		Card: &cardStateJSON{
+			DeckName:       dc.Card.DeckName(),
+			Front:          entry.Front,
+			Back:           entry.Back,
+			Revealed:       h.sess.Revealed,
+			CanUndo:        len(h.sess.Done) > 0,
+			ReviewedCount:  done,
+			Total:          total,
+			ProgressPct:    percent,
+			AnswerControls: h.answerControls,
+			Macros:         macrosMap(h.macros),
+		},
 	}
-
-	h.renderTemplate(w, "card.html", data)
-}
-
-func (h *handler) renderDone(w http.ResponseWriter) {
-	reviewed := h.sess.ReviewedCount()
-	var durationSec int64
-	if !h.endedAt.IsZero() {
-		durationSec = int64(h.endedAt.Sub(h.sess.StartedAt.Time()).Seconds())
-	}
-
-	data := doneData{
-		Reviewed:    reviewed,
-		Total:       h.sess.Total(),
-		DurationSec: durationSec,
-		BasePath:    h.mountPath + "/",
-	}
-
-	h.renderTemplate(w, "done.html", data)
-}
-
-func (h *handler) renderNoCards(w http.ResponseWriter) {
-	h.renderTemplate(w, "no_cards.html", struct{ BasePath string }{h.mountPath + "/"})
-}
-
-// -------------------------------------------------------------------------
-// macrosJS
-// -------------------------------------------------------------------------
-
-// macrosJS returns a JavaScript snippet that initialises the KaTeX MACROS object.
-func (h *handler) macrosJS() template.JS {
-	var sb strings.Builder
-	sb.WriteString("var MACROS = {};\n")
-	for _, m := range h.macros {
-		name := escapeJSString(m[0])
-		def := escapeJSString(m[1])
-		sb.WriteString(fmt.Sprintf("MACROS['%s'] = '%s';\n", name, def))
-	}
-	return template.JS(sb.String())
-}
-
-func escapeJSString(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, "`", "\\`")
-	s = strings.ReplaceAll(s, "$", "\\$")
-	s = strings.ReplaceAll(s, "'", "\\'")
-	return s
-}
-
-// -------------------------------------------------------------------------
-// Template data types
-// -------------------------------------------------------------------------
-
-type cardData struct {
-	DeckName    string
-	Front       template.HTML
-	Back        template.HTML
-	Revealed    bool
-	CanUndo     bool
-	Done        int
-	Total       int
-	ProgressPct int
-	MacrosJS    template.JS
-	// AnswerControls is "full" or "binary".
-	AnswerControls string
-	// BasePath is the mount path with trailing slash, e.g. "/drill/geo/".
-	BasePath string
-}
-
-type doneData struct {
-	Reviewed    int
-	Total       int
-	DurationSec int64
-	// BasePath is the mount path with trailing slash, e.g. "/drill/geo/".
-	BasePath string
 }

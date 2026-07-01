@@ -9,7 +9,7 @@ kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
 
 .PHONY: server
-server: kill-ports
+server: kill-ports build
 	./$(BINARY) serve --config=config.toml
 
 init: build kill-ports
