@@ -12,11 +12,14 @@ clean:
 reset:
 	rm -f hashcards.db
 
-.PHONY: serve
-serve:
-	rm -fr ./data
-	mkdir -p ./data
+.PHONY: server
+server:
 	./hashcards serve --config=config.toml
+
+init: build
+	#./hashcards migrate up --dir=pb_data
+	./hashcards superuser upsert admin@mail.internal password --dir=pb_data
+
 
 
 .PHONY: build-container
