@@ -1,12 +1,12 @@
 services:
-  go-hashcards:
+  hashcards:
     build: .
     restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
       - ./config.toml:/hashcards/config.toml:ro
-      - ./example:/hashcards/cards
-      - ./data:/hashcards/data
+      - ./cards:/hashcards/cards
+      - ./pb_data:/hashcards/pb_data
     environment:
       - TZ=Azia/Tokyo
