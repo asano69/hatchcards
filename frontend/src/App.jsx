@@ -11,10 +11,11 @@ async function fetchSessions() {
 }
 
 // frontend/src/App.jsx
+// 修正後のコード
 function SessionItem(props) {
   return (
     <li>
-      
+      <a
         href={props.session.drill_url}
         class="session-link"
         style={{ "--retri-pct": `${props.session.retri_pct.toFixed(1)}%` }}
