@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -26,6 +25,8 @@ import (
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/rng"
 	"github.com/asano69/hashcards/internal/types"
+	"github.com/pocketbase/pocketbase/apis"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 // sessionInfo is the JSON representation returned by /api/sessions.
@@ -146,12 +147,19 @@ func Run(cfg *config.Config, out io.Writer) error {
 	})
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("listen on %s: %w", addr, err)
-	}
-	fmt.Fprintf(out, "Listening on http://%s:%d\n", cfg.Server.Host, cfg.Server.Port)
-	return http.Serve(ln, router)
+	app := database.App()
+	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// Mount the hashcards HTTP handlers on PocketBase's router so the
+		// PocketBase admin UI and APIs remain available on the same server
+		// (for example, http://localhost:3000/_/).
+		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
+		return e.Next()
+	})
+	fmt.Fprintf(out, "Listening on http://%s\n", addr)
+	return apis.Serve(app, apis.ServeConfig{
+		HttpAddr:        addr,
+		ShowStartBanner: false,
+	})
 }
 
 // computeAvgRetrieval returns the average retrievability of all cards in the

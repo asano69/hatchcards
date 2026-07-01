@@ -78,6 +78,7 @@ func Open(path string) (*Database, error) {
 }
 
 func (db *Database) Close() error                        { return db.app.ResetBootstrapState() }
+func (db *Database) App() *pocketbase.PocketBase         { return db.app }
 func (db *Database) q(s string, p dbx.Params) *dbx.Query { return db.app.DB().NewQuery(s).Bind(p) }
 
 func (db *Database) probeSchemaExists() (bool, error) {
