@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 
@@ -114,12 +115,28 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		http.ServeFileFS(w, r, assets.FS, "index.html")
 	})
 
+	// Vite's public/ directory (favicon.svg etc.) is copied to the root of
+	// the build output, so it's served directly rather than under /assets/.
+	router.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		http.ServeFileFS(w, r, assets.FS, "favicon.svg")
+	})
+
+	// assetsFS exposes just the "assets/" subdirectory that Vite's default
+	// (unprefixed) base writes hashed JS/CSS bundles into, so they're served
+	// at the conventional /assets/... URL instead of /static/assets/....
+	assetsFS, err := fs.Sub(assets.FS, "assets")
+	if err != nil {
+		return fmt.Errorf("sub assets fs: %w", err)
+	}
+
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		e.Router.GET("/static/{path...}", apis.Static(assets.FS, false))
+		e.Router.GET("/assets/{path...}", apis.Static(assetsFS, false))
 		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
 		return e.Next()
 	})
+
 	fmt.Fprintf(out, "Listening on http://%s\n", addr)
 	return apis.Serve(app, apis.ServeConfig{
 		HttpAddr:        addr,

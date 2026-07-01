@@ -5,13 +5,13 @@ import (
 	"io/fs"
 )
 
-//go:embed static/dist
+//go:embed dist
 var rawStatic embed.FS
 
 var FS fs.FS
 
 func init() {
-	sub, err := fs.Sub(rawStatic, "static/dist")
+	sub, err := fs.Sub(rawStatic, "dist")
 	if err != nil {
 		panic(err)
 	}

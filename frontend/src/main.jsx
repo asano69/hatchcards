@@ -1,7 +1,5 @@
 import { render } from "solid-js/web";
 import { Router, Route } from "@solidjs/router";
-import katex from "katex";
-import hljs from "highlight.js";
 
 // Order matters: tokens.css defines the CSS custom properties every other
 // stylesheet consumes via var().
@@ -13,10 +11,6 @@ import "./styles/drill.css";
 import "./styles/done.css";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github.css";
-
-// Drill.jsx reads window.katex / window.hljs directly.
-window.katex = katex;
-window.hljs = hljs;
 
 import Sessions from "./routes/Sessions";
 import Drill from "./routes/Drill";

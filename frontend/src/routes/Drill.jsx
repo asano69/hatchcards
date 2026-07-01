@@ -1,5 +1,7 @@
 import { createSignal, onMount, onCleanup, createEffect, Switch, Match } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
+import katex from "katex";
+import hljs from "highlight.js";
 
 async function fetchState(deck) {
   const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
@@ -168,24 +170,23 @@ function Card(props) {
 }
 
 // renderMathAndCode runs KaTeX and highlight.js over the freshly injected
-// card content. katex/hljs are loaded as plain <script> tags in index.html,
-// so they hang off `window` rather than being ES module imports.
+// card content.
 function renderMathAndCode(macros) {
   document.querySelectorAll(".math-inline").forEach((el) => {
-    window.katex.render(el.textContent, el, {
+    katex.render(el.textContent, el, {
       displayMode: false,
       throwOnError: false,
       macros: macros || {},
     });
   });
   document.querySelectorAll(".math-display").forEach((el) => {
-    window.katex.render(el.textContent, el, {
+    katex.render(el.textContent, el, {
       displayMode: true,
       throwOnError: false,
       macros: macros || {},
     });
   });
-  if (typeof window.hljs !== "undefined") window.hljs.highlightAll();
+  hljs.highlightAll();
 
   const content = document.querySelector(".card-content");
   if (content) content.style.opacity = "1";

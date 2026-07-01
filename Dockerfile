@@ -12,7 +12,7 @@ WORKDIR /build
 COPY go.mod go.sum* ./
 RUN go mod download || true
 COPY . .
-COPY --from=node-builder /build/dist ./internal/assets/static/dist
+COPY --from=node-builder /build/dist ./internal/assets/dist
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hashcards ./cmd/hashcards
 
 # Stage 2: runtime
