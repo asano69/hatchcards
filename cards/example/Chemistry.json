@@ -1,0 +1,52 @@
+[
+  {
+    "type": "Q",
+    "question": "$\\ce{CO2 + C -> 2 CO}$",
+    "answer": "Carbon monoxide"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{2 H2 + O2 -> 2 H2O}$",
+    "answer": "Water"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{N2 + 3 H2 <=> 2 NH3}$",
+    "answer": "Ammonia"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{CaCO3 -> CaO + CO2}$",
+    "answer": "Calcium oxide"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{2 KClO3 -> 2 KCl + 3 O2}$",
+    "answer": "Oxygen"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{Fe2O3 + 3 CO -> 2 Fe + 3 CO2}$",
+    "answer": "Iron"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{Zn + 2 HCl -> ZnCl2 + H2}$",
+    "answer": "Hydrogen"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{Na2CO3 + 2 HCl -> 2 NaCl + H2O + CO2}$",
+    "answer": "Carbon dioxide"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{CuO + H2 -> Cu + H2O}$",
+    "answer": "Copper"
+  },
+  {
+    "type": "Q",
+    "question": "$\\ce{2 SO2 + O2 -> 2 SO3}$",
+    "answer": "Sulfur trioxide"
+  }
+]

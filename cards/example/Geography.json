@@ -1,0 +1,11 @@
+[
+  {
+    "type": "Q",
+    "question": "What is the capital of France?",
+    "answer": "Paris"
+  },
+  {
+    "type": "C",
+    "text": "[Berlin] is the capital of [Germany]."
+  }
+]
