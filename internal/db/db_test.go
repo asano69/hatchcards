@@ -53,6 +53,16 @@ func TestInsertCard(t *testing.T) {
 	}
 }
 
+func TestPocketBaseCollectionsExist(t *testing.T) {
+	db := openMemory(t)
+
+	for _, name := range []string{"cards", "sessions", "reviews"} {
+		if _, err := db.App().FindCollectionByNameOrId(name); err != nil {
+			t.Fatalf("FindCollectionByNameOrId(%q): %v", name, err)
+		}
+	}
+}
+
 // TestInsertTwice matches Rust's test_insert_twice.
 func TestInsertTwice(t *testing.T) {
 	db := openMemory(t)

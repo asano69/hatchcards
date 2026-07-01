@@ -26,7 +26,7 @@ type ExportedReview struct {
 
 // ExportedSession is one session record in the JSON output.
 type ExportedSession struct {
-	SessionID int64            `json:"session_id"`
+	SessionID string           `json:"session_id"`
 	StartedAt string           `json:"started_at"`
 	EndedAt   string           `json:"ended_at"`
 	Reviews   []ExportedReview `json:"reviews"`

@@ -31,12 +31,12 @@ type ReviewRecord struct {
 	DueDate      types.Date
 }
 type SessionRow struct {
-	SessionID int64
+	SessionID string
 	StartedAt types.Timestamp
 	EndedAt   types.Timestamp
 }
 type ReviewRow struct {
-	ReviewID int64
+	ReviewID string
 	Data     ReviewRecord
 }
 
@@ -63,16 +63,9 @@ func Open(path string) (*Database, error) {
 		return nil, errs.Newf("bootstrap PocketBase: %v", err)
 	}
 	db := &Database{app: app}
-	exists, err := db.probeSchemaExists()
-	if err != nil {
+	if err := db.ensureSchema(); err != nil {
 		_ = db.Close()
 		return nil, err
-	}
-	if !exists {
-		if _, err := app.DB().NewQuery(schemaSQL).Execute(); err != nil {
-			_ = db.Close()
-			return nil, errs.Newf("initialise schema: %v", err)
-		}
 	}
 	return db, nil
 }
@@ -80,6 +73,64 @@ func Open(path string) (*Database, error) {
 func (db *Database) Close() error                        { return db.app.ResetBootstrapState() }
 func (db *Database) App() *pocketbase.PocketBase         { return db.app }
 func (db *Database) q(s string, p dbx.Params) *dbx.Query { return db.app.DB().NewQuery(s).Bind(p) }
+
+func (db *Database) ensureSchema() error {
+	if err := db.ensureCollection("cards", func(c *core.Collection) {
+		c.Fields.Add(
+			&core.TextField{Name: "card_hash", Required: true, Presentable: true},
+			&core.TextField{Name: "added_at", Required: true},
+			&core.TextField{Name: "last_reviewed_at"},
+			&core.NumberField{Name: "stability"},
+			&core.NumberField{Name: "difficulty"},
+			&core.NumberField{Name: "interval_raw"},
+			&core.NumberField{Name: "interval_days", OnlyInt: true},
+			&core.TextField{Name: "due_date"},
+			&core.NumberField{Name: "review_count", OnlyInt: true},
+		)
+		c.AddIndex("idx_cards_card_hash_unique", true, "card_hash", "")
+	}); err != nil {
+		return err
+	}
+	if err := db.ensureCollection("sessions", func(c *core.Collection) {
+		c.Fields.Add(
+			&core.TextField{Name: "started_at", Required: true},
+			&core.TextField{Name: "ended_at", Required: true},
+		)
+		c.AddIndex("idx_sessions_started_at", false, "started_at", "")
+	}); err != nil {
+		return err
+	}
+	if err := db.ensureCollection("reviews", func(c *core.Collection) {
+		c.Fields.Add(
+			&core.TextField{Name: "session_id", Required: true},
+			&core.TextField{Name: "card_hash", Required: true},
+			&core.TextField{Name: "reviewed_at", Required: true},
+			&core.TextField{Name: "grade", Required: true},
+			&core.NumberField{Name: "stability", Required: true},
+			&core.NumberField{Name: "difficulty", Required: true},
+			&core.NumberField{Name: "interval_raw", Required: true},
+			&core.NumberField{Name: "interval_days", OnlyInt: true, Required: true},
+			&core.TextField{Name: "due_date", Required: true},
+		)
+		c.AddIndex("idx_reviews_session_id", false, "session_id", "")
+		c.AddIndex("idx_reviews_card_hash", false, "card_hash", "")
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *Database) ensureCollection(name string, configure func(*core.Collection)) error {
+	if _, err := db.app.FindCollectionByNameOrId(name); err == nil {
+		return nil
+	}
+	c := core.NewBaseCollection(name)
+	configure(c)
+	if err := db.app.Save(c); err != nil {
+		return errs.Newf("ensure PocketBase collection %q: %v", name, err)
+	}
+	return nil
+}
 
 func (db *Database) probeSchemaExists() (bool, error) {
 	var count int
@@ -146,7 +197,7 @@ func (db *Database) DueToday(today types.Date) (map[types.CardHash]struct{}, err
 		if err != nil {
 			return nil, err
 		}
-		if !dueStr.Valid {
+		if !dueStr.Valid || dueStr.String == "" {
 			due[h] = struct{}{}
 			continue
 		}
@@ -174,7 +225,7 @@ func (db *Database) GetCardPerformanceOpt(cardHash types.CardHash) (*types.Perfo
 	if err != nil {
 		return nil, errs.Newf("get card performance: %v", err)
 	}
-	if !lra.Valid || !st.Valid || !diff.Valid || !raw.Valid || !days.Valid || !dd.Valid {
+	if !lra.Valid || lra.String == "" || !st.Valid || st.Float64 == 0 || !diff.Valid || diff.Float64 == 0 || !raw.Valid || raw.Float64 == 0 || !days.Valid || !dd.Valid || dd.String == "" {
 		p := types.NewCardPerformance()
 		return &p, nil
 	}
@@ -208,7 +259,7 @@ func (db *Database) UpdateCardPerformance(cardHash types.CardHash, perf types.Pe
 	if !exists {
 		return errs.New("Card not found")
 	}
-	p := dbx.Params{"hash": cardHash.Hex(), "lra": nil, "st": nil, "diff": nil, "raw": nil, "days": nil, "due": nil, "count": 0}
+	p := dbx.Params{"hash": cardHash.Hex(), "lra": "", "st": 0, "diff": 0, "raw": 0, "days": 0, "due": "", "count": 0}
 	if rp := perf.Reviewed(); rp != nil {
 		p["lra"] = rp.LastReviewedAt.String()
 		p["st"] = rp.Stability
@@ -226,9 +277,9 @@ func (db *Database) UpdateCardPerformance(cardHash types.CardHash, perf types.Pe
 }
 
 func (db *Database) SaveSession(startedAt types.Timestamp, endedAt types.Timestamp, reviews []ReviewRecord) error {
-	var sid int64
+	var sid string
 	err := db.app.RunInTransaction(func(txApp core.App) error {
-		if err := txApp.DB().NewQuery("insert into sessions (started_at, ended_at) values ({:s}, {:e}) returning session_id;").Bind(dbx.Params{"s": startedAt.String(), "e": endedAt.String()}).Row(&sid); err != nil {
+		if err := txApp.DB().NewQuery("insert into sessions (started_at, ended_at) values ({:s}, {:e}) returning id;").Bind(dbx.Params{"s": startedAt.String(), "e": endedAt.String()}).Row(&sid); err != nil {
 			return errs.Newf("insert session: %v", err)
 		}
 		for _, r := range reviews {
@@ -268,14 +319,14 @@ func (db *Database) CountReviewsInDate(date types.Date) (int, error) {
 }
 
 func (db *Database) GetAllSessions() ([]SessionRow, error) {
-	rows, err := db.q("select session_id, started_at, ended_at from sessions order by started_at;", nil).Rows()
+	rows, err := db.q("select id, started_at, ended_at from sessions order by started_at;", nil).Rows()
 	if err != nil {
 		return nil, errs.Newf("query sessions: %v", err)
 	}
 	defer rows.Close()
 	var out []SessionRow
 	for rows.Next() {
-		var id int64
+		var id string
 		var ss, es string
 		if err := rows.Scan(&id, &ss, &es); err != nil {
 			return nil, errs.Newf("scan session row: %v", err)
@@ -293,15 +344,15 @@ func (db *Database) GetAllSessions() ([]SessionRow, error) {
 	return out, rows.Err()
 }
 
-func (db *Database) GetReviewsForSession(sessionID int64) ([]ReviewRow, error) {
-	rows, err := db.q(`select review_id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date from reviews where session_id={:sid} order by reviewed_at;`, dbx.Params{"sid": sessionID}).Rows()
+func (db *Database) GetReviewsForSession(sessionID string) ([]ReviewRow, error) {
+	rows, err := db.q(`select id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date from reviews where session_id={:sid} order by reviewed_at;`, dbx.Params{"sid": sessionID}).Rows()
 	if err != nil {
 		return nil, errs.Newf("query reviews for session: %v", err)
 	}
 	defer rows.Close()
 	var out []ReviewRow
 	for rows.Next() {
-		var id int64
+		var id string
 		var hh, at, gr, dueS string
 		var st, diff, raw float64
 		var days int64
