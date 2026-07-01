@@ -104,11 +104,11 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 
 	router.HandleFunc("GET /drill", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeFileFS(w, r, assets.FS, "drill.html")
+		http.ServeFileFS(w, r, assets.FS, "index.html")
 	})
 
-	// GET / serves a static shell; index.js fetches /api/sessions and
-	// renders the session list client-side. No server-side templating.
+	// GET / serves the same static shell as /drill; index.js's Solid Router
+	// decides which screen to render based on the current path.
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

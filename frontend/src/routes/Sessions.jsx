@@ -1,4 +1,5 @@
 import { createResource, For, Show } from "solid-js";
+import { A } from "@solidjs/router";
 
 // Session data (including the retrievability percentage used for the
 // progress-bar background) comes entirely from GET /api/sessions.
@@ -10,23 +11,21 @@ async function fetchSessions() {
   return res.json();
 }
 
-// frontend/src/App.jsx
-// 修正後のコード
 function SessionItem(props) {
   return (
     <li>
-      <a
+      <A
         href={props.session.drill_url}
         class="session-link"
         style={{ "--retri-pct": `${props.session.retri_pct.toFixed(1)}%` }}
       >
         {props.session.name}
-      </a>
+      </A>
     </li>
   );
 }
 
-export default function App() {
+export default function Sessions() {
   const [sessions] = createResource(fetchSessions);
 
   return (
