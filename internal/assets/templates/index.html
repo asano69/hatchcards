@@ -1,24 +1,22 @@
-{{define "content"}}
-<div class="index-wrap">
+{{ define "content" }}
+  <div class="index-wrap">
     <h1>Hashcards</h1>
-    {{if .Sessions}}
-    <ul class="session-list">
-        {{range .Sessions}}
-        <li>
-            <a href="{{.DrillURL}}" class="session-link"
-               style="--retri-pct: {{printf "%.1f" .RetriPct}}%;">
-                {{.Name}}
+    {{ if .Sessions }}
+      <ul class="session-list">
+        {{ range .Sessions }}
+          <li>
+            <a
+              href="{{ .DrillURL }}"
+              class="session-link"
+              style="--retri-pct: {{ printf "%.1f" .RetriPct }}%;"
+            >
+              {{ .Name }}
             </a>
-        </li>
-        {{end}}
-    </ul>
-    {{else}}
-    <p class="index-message">No sessions configured.</p>
-    {{end}}
-</div>
-<div class="index-actions">
-    <a href="/new" class="btn" title="Add a new card">New Card</a>
-    <a href="/delete" class="btn" title="Delete cards">Delete Card</a>
-</div>
-
-{{end}}
+          </li>
+        {{ end }}
+      </ul>
+    {{ else }}
+      <p class="index-message">No sessions configured.</p>
+    {{ end }}
+  </div>
+{{ end }}

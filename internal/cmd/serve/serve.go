@@ -8,10 +8,7 @@ import (
 
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -41,23 +38,8 @@ type sessionInfo struct {
 	RetriPct float64 `json:"retri_pct"`
 }
 
-// newCardData holds template data for the /new card registration page.
-type newCardData struct {
-	Mode         string // "single" or "bulk"
-	Decks        []string
-	SelectedDeck string
-	Question     string
-	Answer       string
-	BulkContent  string
-	Success      bool
-	SavedFile    string
-	Error        string
-}
-
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
-// internal/cmd/serve/serve.go
-
 func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 	database, err := db.New(app)
 	if err != nil {
@@ -86,19 +68,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(sessionJSON)
 	})
-
-	// /new — card registration form.
-	router.HandleFunc("GET /new", newCardGetHandler(cfg))
-	router.HandleFunc("POST /new", newCardPostHandler(cfg, database))
-
-	// /delete — pass db and collectionRoot so each request reloads the collection.
-	dh := &deleteHandler{
-		col:            col,
-		db:             database,
-		collectionRoot: cfg.Data.Root,
-	}
-	router.HandleFunc("GET /delete", dh.handleGet)
-	router.HandleFunc("POST /delete", dh.handlePost)
 
 	// Register drill routes with more specific (longer) paths first to avoid
 	// the all-decks PathPrefix("/drill") intercepting named-deck requests.
@@ -289,147 +258,4 @@ func registerDrillRoute(
 		cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
 	)
 	return nil
-}
-
-// deckNames returns a deduplicated list of deck names from the config sessions.
-// Sessions without a FromDeck (all-decks sessions) are skipped.
-func deckNames(cfg *config.Config) []string {
-	seen := make(map[string]struct{})
-	var names []string
-	for _, s := range cfg.Sessions {
-		if s.FromDeck == "" {
-			continue
-		}
-		if _, ok := seen[s.FromDeck]; !ok {
-			seen[s.FromDeck] = struct{}{}
-			names = append(names, s.FromDeck)
-		}
-	}
-	return names
-}
-
-// newCardGetHandler renders the blank card registration form.
-func newCardGetHandler(cfg *config.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		decks := deckNames(cfg)
-		selected := ""
-		if len(decks) > 0 {
-			selected = decks[0]
-		}
-		renderNewCard(w, newCardData{
-			Mode:         "single",
-			Decks:        decks,
-			SelectedDeck: selected,
-		})
-	}
-}
-
-// newCardPostHandler handles form submission and appends the card to the
-// appropriate uploads/<deck>.md file under the collection root.
-// After saving, the collection is reloaded to sync new cards into the database,
-// which ensures the progress bar and delete page reflect the new card immediately.
-func newCardPostHandler(cfg *config.Config, database *db.Database) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		decks := deckNames(cfg)
-		mode := r.FormValue("mode")
-		if mode == "" {
-			mode = "single"
-		}
-		deck := strings.TrimSpace(r.FormValue("deck"))
-
-		data := newCardData{
-			Mode:         mode,
-			Decks:        decks,
-			SelectedDeck: deck,
-		}
-
-		if deck == "" {
-			data.Error = "Deck is required."
-			renderNewCard(w, data)
-			return
-		}
-
-		uploadsDir := filepath.Join(cfg.Data.Root, "uploads")
-		if err := os.MkdirAll(uploadsDir, 0755); err != nil {
-			data.Error = fmt.Sprintf("Could not create uploads directory: %v", err)
-			renderNewCard(w, data)
-			return
-		}
-
-		// Sanitize the deck name to produce a safe file name.
-		safeName := strings.Map(func(r rune) rune {
-			if strings.ContainsRune(`/\:*?"<>|`, r) {
-				return '_'
-			}
-			return r
-		}, deck)
-		mdPath := filepath.Join(uploadsDir, safeName+".md")
-
-		var entry string
-		if mode == "bulk" {
-			bulk := strings.TrimSpace(r.FormValue("bulk_content"))
-			if bulk == "" {
-				data.BulkContent = bulk
-				data.Error = "Content is required."
-				renderNewCard(w, data)
-				return
-			}
-			entry = bulk + "\n\n---\n\n"
-		} else {
-			question := strings.TrimSpace(r.FormValue("question"))
-			answer := strings.TrimSpace(r.FormValue("answer"))
-			data.Question = question
-			data.Answer = answer
-			if question == "" || answer == "" {
-				data.Error = "Question and answer are required."
-				renderNewCard(w, data)
-				return
-			}
-			entry = fmt.Sprintf("Q: %s\nA: %s\n\n---\n\n", question, answer)
-		}
-
-		f, err := os.OpenFile(mdPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			data.Error = fmt.Sprintf("Could not open file: %v", err)
-			renderNewCard(w, data)
-			return
-		}
-		defer f.Close()
-
-		if _, err := f.WriteString(entry); err != nil {
-			data.Error = fmt.Sprintf("Could not write card: %v", err)
-			renderNewCard(w, data)
-			return
-		}
-		f.Close()
-
-		// Reload the collection to insert the new card into the database.
-		// This ensures the progress bar and delete page reflect the new card
-		// without requiring a server restart or a completed drill session.
-		if _, err := collection.Load(cfg.Data.Root, database); err != nil {
-			fmt.Printf("[new card] warning: reload collection: %v\n", err)
-		}
-
-		// On success, reset the form but keep the same deck and mode selected.
-		renderNewCard(w, newCardData{
-			Mode:         mode,
-			Decks:        decks,
-			SelectedDeck: deck,
-			Success:      true,
-			SavedFile:    mdPath,
-		})
-	}
-}
-
-// renderNewCard renders the new.html template with the given data.
-func renderNewCard(w http.ResponseWriter, data newCardData) {
-	tmpl, err := assets.ParseTemplate("new.html")
-	if err != nil {
-		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
-		fmt.Printf("new card render error: %v\n", err)
-	}
 }
