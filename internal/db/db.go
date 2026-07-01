@@ -1,6 +1,6 @@
-// Package db wraps the SQLite database that persists card performance and
-// review history. All SQL is issued through this package; no other package
-// touches the database directly.
+// Package db wraps the embedded PocketBase datastore that persists card performance and
+// review history. All persistence is issued through this package; no other package
+// touches the datastore directly.
 package db
 
 import (
@@ -12,14 +12,14 @@ import (
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/types"
-
-	_ "modernc.org/sqlite" // register the "sqlite" driver
+	"github.com/pocketbase/dbx"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 //go:embed schema.sql
 var schemaSQL string
 
-// ReviewRecord holds the data for a single card review to be persisted.
 type ReviewRecord struct {
 	CardHash     types.CardHash
 	ReviewedAt   types.Timestamp
@@ -30,88 +30,73 @@ type ReviewRecord struct {
 	IntervalDays int64
 	DueDate      types.Date
 }
-
-// SessionRow is a row read from the sessions table.
 type SessionRow struct {
 	SessionID int64
 	StartedAt types.Timestamp
 	EndedAt   types.Timestamp
 }
-
-// ReviewRow is a row read from the reviews table, including its session-level data.
 type ReviewRow struct {
 	ReviewID int64
 	Data     ReviewRecord
 }
 
-// Database wraps a *sql.DB and exposes the operations used by the rest of the
-// application.
-type Database struct {
-	conn *sql.DB
-}
+type Database struct{ app *pocketbase.PocketBase }
 
-// Open opens the SQLite database at the given path, enabling foreign keys and
-// initialising the schema if it does not yet exist.
 func Open(path string) (*Database, error) {
-	// Check that the parent directory exists before SQLite tries to open the
-	// file, so we can produce a clear error message instead of the cryptic
-	// "out of memory" error that SQLite returns for a missing directory.
-	if path != ":memory:" {
+	if path == ":memory:" {
+		d, err := os.MkdirTemp("", "hashcards-pocketbase-*")
+		if err != nil {
+			return nil, errs.Newf("create temporary PocketBase data directory: %v", err)
+		}
+		path = d
+	} else {
 		dir := filepath.Dir(path)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			return nil, errs.Newf("database directory does not exist: %s (create it or update [data].db in config.toml)", dir)
 		}
+		if filepath.Ext(path) != "" {
+			path = filepath.Join(dir, filepath.Base(path)+".pb_data")
+		}
 	}
-
-	conn, err := sql.Open("sqlite", path)
-	if err != nil {
-		return nil, errs.Newf("open database: %v", err)
+	app := pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: path, HideStartBanner: true})
+	if err := app.Bootstrap(); err != nil {
+		return nil, errs.Newf("bootstrap PocketBase: %v", err)
 	}
-
-	// Enable foreign key enforcement for this connection.
-	if _, err := conn.Exec("pragma foreign_keys = on;"); err != nil {
-		conn.Close()
-		return nil, errs.Newf("enable foreign keys: %v", err)
-	}
-
-	db := &Database{conn: conn}
-
-	// Create the schema if the cards table does not yet exist.
+	db := &Database{app: app}
 	exists, err := db.probeSchemaExists()
 	if err != nil {
-		conn.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	if !exists {
-		if _, err := conn.Exec(schemaSQL); err != nil {
-			conn.Close()
+		if _, err := app.DB().NewQuery(schemaSQL).Execute(); err != nil {
+			_ = db.Close()
 			return nil, errs.Newf("initialise schema: %v", err)
 		}
 	}
-
 	return db, nil
 }
 
-// Close releases the underlying database connection.
-func (db *Database) Close() error {
-	return db.conn.Close()
-}
+func (db *Database) Close() error                        { return db.app.ResetBootstrapState() }
+func (db *Database) q(s string, p dbx.Params) *dbx.Query { return db.app.DB().NewQuery(s).Bind(p) }
 
-// probeSchemaExists returns true when the cards table already exists in the database.
 func (db *Database) probeSchemaExists() (bool, error) {
 	var count int
-	err := db.conn.QueryRow(
-		"select count(*) from sqlite_master where type='table' AND name=?;",
-		"cards",
-	).Scan(&count)
+	err := db.q("select count(*) from sqlite_master where type='table' AND name={:name};", dbx.Params{"name": "cards"}).Row(&count)
 	if err != nil {
 		return false, errs.Newf("probe schema: %v", err)
 	}
 	return count > 0, nil
 }
+func (db *Database) cardExists(cardHash types.CardHash) (bool, error) {
+	var count int
+	err := db.q("select count(*) from cards where card_hash={:hash};", dbx.Params{"hash": cardHash.Hex()}).Row(&count)
+	if err != nil {
+		return false, errs.Newf("check card existence: %v", err)
+	}
+	return count > 0, nil
+}
 
-// InsertCard adds a new card to the database with no review history.
-// Returns an error if the card already exists.
 func (db *Database) InsertCard(cardHash types.CardHash, addedAt types.Timestamp) error {
 	exists, err := db.cardExists(cardHash)
 	if err != nil {
@@ -120,152 +105,100 @@ func (db *Database) InsertCard(cardHash types.CardHash, addedAt types.Timestamp)
 	if exists {
 		return errs.New("Card already exists")
 	}
-	_, err = db.conn.Exec(
-		"insert into cards (card_hash, added_at, review_count) values (?, ?, 0);",
-		cardHash.Hex(),
-		addedAt.String(),
-	)
+	_, err = db.q("insert into cards (card_hash, added_at, review_count) values ({:hash}, {:added}, 0);", dbx.Params{"hash": cardHash.Hex(), "added": addedAt.String()}).Execute()
 	if err != nil {
 		return errs.Newf("insert card: %v", err)
 	}
 	return nil
 }
 
-// CardHashes returns the set of all card hashes currently stored in the database.
 func (db *Database) CardHashes() (map[types.CardHash]struct{}, error) {
-	rows, err := db.conn.Query("select card_hash from cards;")
-	if err != nil {
+	var xs []string
+	if err := db.q("select card_hash from cards;", nil).Column(&xs); err != nil {
 		return nil, errs.Newf("query card hashes: %v", err)
 	}
-	defer rows.Close()
-
-	hashes := make(map[types.CardHash]struct{})
-	for rows.Next() {
-		var hexStr string
-		if err := rows.Scan(&hexStr); err != nil {
-			return nil, errs.Newf("scan card hash: %v", err)
-		}
-		h, err := types.ParseCardHash(hexStr)
+	m := map[types.CardHash]struct{}{}
+	for _, x := range xs {
+		h, err := types.ParseCardHash(x)
 		if err != nil {
 			return nil, err
 		}
-		hashes[h] = struct{}{}
+		m[h] = struct{}{}
 	}
-	return hashes, rows.Err()
+	return m, nil
 }
 
-// DueToday returns the set of card hashes that are due for review on or before today.
-// Cards that have never been reviewed are always included.
 func (db *Database) DueToday(today types.Date) (map[types.CardHash]struct{}, error) {
-	rows, err := db.conn.Query("select card_hash, due_date from cards;")
+	rows, err := db.q("select card_hash, due_date from cards;", nil).Rows()
 	if err != nil {
 		return nil, errs.Newf("query due today: %v", err)
 	}
 	defer rows.Close()
-
-	due := make(map[types.CardHash]struct{})
+	due := map[types.CardHash]struct{}{}
 	for rows.Next() {
-		var hexStr string
-		var dueDateStr *string
-		if err := rows.Scan(&hexStr, &dueDateStr); err != nil {
+		var hex string
+		var dueStr sql.NullString
+		if err := rows.Scan(&hex, &dueStr); err != nil {
 			return nil, errs.Newf("scan due today row: %v", err)
 		}
-		h, err := types.ParseCardHash(hexStr)
+		h, err := types.ParseCardHash(hex)
 		if err != nil {
 			return nil, err
 		}
-		if dueDateStr == nil {
+		if !dueStr.Valid {
 			due[h] = struct{}{}
 			continue
 		}
-		dueDate, err := types.ParseDate(*dueDateStr)
+		dd, err := types.ParseDate(dueStr.String)
 		if err != nil {
 			return nil, err
 		}
-		if dueDate.LessOrEqual(today) {
+		if dd.LessOrEqual(today) {
 			due[h] = struct{}{}
 		}
 	}
 	return due, rows.Err()
 }
 
-// GetCardPerformanceOpt returns the performance for a card, or nil when the
-// card does not exist in the database.
 func (db *Database) GetCardPerformanceOpt(cardHash types.CardHash) (*types.Performance, error) {
-	var (
-		lastReviewedAtStr *string
-		stability         *float64
-		difficulty        *float64
-		intervalRaw       *float64
-		intervalDays      *int64
-		dueDateStr        *string
-		reviewCount       int
-	)
-	err := db.conn.QueryRow(
-		`select last_reviewed_at, stability, difficulty, interval_raw,
-		        interval_days, due_date, review_count
-		 from cards where card_hash = ?;`,
-		cardHash.Hex(),
-	).Scan(
-		&lastReviewedAtStr,
-		&stability,
-		&difficulty,
-		&intervalRaw,
-		&intervalDays,
-		&dueDateStr,
-		&reviewCount,
-	)
+	var lra sql.NullString
+	var st, diff, raw sql.NullFloat64
+	var days sql.NullInt64
+	var dd sql.NullString
+	var count int
+	err := db.q(`select last_reviewed_at, stability, difficulty, interval_raw, interval_days, due_date, review_count from cards where card_hash={:hash};`, dbx.Params{"hash": cardHash.Hex()}).Row(&lra, &st, &diff, &raw, &days, &dd, &count)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, errs.Newf("get card performance: %v", err)
 	}
-
-	if lastReviewedAtStr == nil || stability == nil || difficulty == nil ||
-		intervalRaw == nil || intervalDays == nil || dueDateStr == nil {
+	if !lra.Valid || !st.Valid || !diff.Valid || !raw.Valid || !days.Valid || !dd.Valid {
 		p := types.NewCardPerformance()
 		return &p, nil
 	}
-
-	lastReviewedAt, err := types.ParseTimestamp(*lastReviewedAtStr)
+	ts, err := types.ParseTimestamp(lra.String)
 	if err != nil {
 		return nil, err
 	}
-	dueDate, err := types.ParseDate(*dueDateStr)
+	due, err := types.ParseDate(dd.String)
 	if err != nil {
 		return nil, err
 	}
-
-	p := types.ReviewedCardPerformance(types.ReviewedPerformance{
-		LastReviewedAt: lastReviewedAt,
-		Stability:      *stability,
-		Difficulty:     *difficulty,
-		IntervalRaw:    *intervalRaw,
-		IntervalDays:   *intervalDays,
-		DueDate:        dueDate,
-		ReviewCount:    reviewCount,
-	})
+	p := types.ReviewedCardPerformance(types.ReviewedPerformance{LastReviewedAt: ts, Stability: st.Float64, Difficulty: diff.Float64, IntervalRaw: raw.Float64, IntervalDays: days.Int64, DueDate: due, ReviewCount: count})
 	return &p, nil
 }
-
-// GetCardPerformance returns the performance for a card.
-// Returns an error when the card does not exist in the database.
 func (db *Database) GetCardPerformance(cardHash types.CardHash) (types.Performance, error) {
 	p, err := db.GetCardPerformanceOpt(cardHash)
 	if err != nil {
 		return types.Performance{}, err
 	}
 	if p == nil {
-		return types.Performance{}, errs.Newf(
-			"No performance data found for card with hash %s", cardHash,
-		)
+		return types.Performance{}, errs.Newf("No performance data found for card with hash %s", cardHash)
 	}
 	return *p, nil
 }
 
-// UpdateCardPerformance persists updated FSRS scheduling data for an existing card.
-// Returns an error when the card does not exist.
 func (db *Database) UpdateCardPerformance(cardHash types.CardHash, perf types.Performance) error {
 	exists, err := db.cardExists(cardHash)
 	if err != nil {
@@ -274,102 +207,40 @@ func (db *Database) UpdateCardPerformance(cardHash types.CardHash, perf types.Pe
 	if !exists {
 		return errs.New("Card not found")
 	}
-
-	var (
-		lastReviewedAt *string
-		stability      *float64
-		difficulty     *float64
-		intervalRaw    *float64
-		intervalDays   *int64
-		dueDate        *string
-		reviewCount    int
-	)
-
+	p := dbx.Params{"hash": cardHash.Hex(), "lra": nil, "st": nil, "diff": nil, "raw": nil, "days": nil, "due": nil, "count": 0}
 	if rp := perf.Reviewed(); rp != nil {
-		lra := rp.LastReviewedAt.String()
-		dd := rp.DueDate.String()
-		id := rp.IntervalDays
-		lastReviewedAt = &lra
-		stability = &rp.Stability
-		difficulty = &rp.Difficulty
-		intervalRaw = &rp.IntervalRaw
-		intervalDays = &id
-		dueDate = &dd
-		reviewCount = rp.ReviewCount
+		p["lra"] = rp.LastReviewedAt.String()
+		p["st"] = rp.Stability
+		p["diff"] = rp.Difficulty
+		p["raw"] = rp.IntervalRaw
+		p["days"] = rp.IntervalDays
+		p["due"] = rp.DueDate.String()
+		p["count"] = rp.ReviewCount
 	}
-
-	_, err = db.conn.Exec(
-		`update cards
-		 set last_reviewed_at = ?, stability = ?, difficulty = ?,
-		     interval_raw = ?, interval_days = ?, due_date = ?, review_count = ?
-		 where card_hash = ?;`,
-		lastReviewedAt,
-		stability,
-		difficulty,
-		intervalRaw,
-		intervalDays,
-		dueDate,
-		reviewCount,
-		cardHash.Hex(),
-	)
+	_, err = db.q(`update cards set last_reviewed_at={:lra}, stability={:st}, difficulty={:diff}, interval_raw={:raw}, interval_days={:days}, due_date={:due}, review_count={:count} where card_hash={:hash};`, p).Execute()
 	if err != nil {
 		return errs.Newf("update card performance: %v", err)
 	}
 	return nil
 }
 
-// SaveSession persists a completed review session and all of its reviews
-// atomically inside a single transaction.
-func (db *Database) SaveSession(
-	startedAt types.Timestamp,
-	endedAt types.Timestamp,
-	reviews []ReviewRecord,
-) error {
-	tx, err := db.conn.Begin()
-	if err != nil {
-		return errs.Newf("begin transaction: %v", err)
-	}
-	defer tx.Rollback() //nolint:errcheck
-
-	var sessionID int64
-	err = tx.QueryRow(
-		"insert into sessions (started_at, ended_at) values (?, ?) returning session_id;",
-		startedAt.String(),
-		endedAt.String(),
-	).Scan(&sessionID)
-	if err != nil {
-		return errs.Newf("insert session: %v", err)
-	}
-
-	for _, r := range reviews {
-		_, err = tx.Exec(
-			`insert into reviews
-			 (session_id, card_hash, reviewed_at, grade, stability, difficulty,
-			  interval_raw, interval_days, due_date)
-			 values (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-			sessionID,
-			r.CardHash.Hex(),
-			r.ReviewedAt.String(),
-			r.Grade.String(),
-			r.Stability,
-			r.Difficulty,
-			r.IntervalRaw,
-			r.IntervalDays,
-			r.DueDate.String(),
-		)
-		if err != nil {
-			return errs.Newf("insert review: %v", err)
+func (db *Database) SaveSession(startedAt types.Timestamp, endedAt types.Timestamp, reviews []ReviewRecord) error {
+	var sid int64
+	err := db.app.RunInTransaction(func(txApp core.App) error {
+		if err := txApp.DB().NewQuery("insert into sessions (started_at, ended_at) values ({:s}, {:e}) returning session_id;").Bind(dbx.Params{"s": startedAt.String(), "e": endedAt.String()}).Row(&sid); err != nil {
+			return errs.Newf("insert session: %v", err)
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errs.Newf("commit session: %v", err)
-	}
-	return nil
+		for _, r := range reviews {
+			_, err := txApp.DB().NewQuery(`insert into reviews (session_id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date) values ({:sid}, {:hash}, {:at}, {:grade}, {:st}, {:diff}, {:raw}, {:days}, {:due});`).Bind(dbx.Params{"sid": sid, "hash": r.CardHash.Hex(), "at": r.ReviewedAt.String(), "grade": r.Grade.String(), "st": r.Stability, "diff": r.Difficulty, "raw": r.IntervalRaw, "days": r.IntervalDays, "due": r.DueDate.String()}).Execute()
+			if err != nil {
+				return errs.Newf("insert review: %v", err)
+			}
+		}
+		return nil
+	})
+	return err
 }
 
-// DeleteCard removes a card and all its associated reviews from the database.
-// Returns an error when the card does not exist.
 func (db *Database) DeleteCard(cardHash types.CardHash) error {
 	exists, err := db.cardExists(cardHash)
 	if err != nil {
@@ -378,146 +249,81 @@ func (db *Database) DeleteCard(cardHash types.CardHash) error {
 	if !exists {
 		return errs.New("Card not found")
 	}
-	if _, err := db.conn.Exec(
-		"delete from reviews where card_hash = ?;", cardHash.Hex(),
-	); err != nil {
+	if _, err := db.q("delete from reviews where card_hash={:hash};", dbx.Params{"hash": cardHash.Hex()}).Execute(); err != nil {
 		return errs.Newf("delete reviews: %v", err)
 	}
-	if _, err := db.conn.Exec(
-		"delete from cards where card_hash = ?;", cardHash.Hex(),
-	); err != nil {
+	if _, err := db.q("delete from cards where card_hash={:hash};", dbx.Params{"hash": cardHash.Hex()}).Execute(); err != nil {
 		return errs.Newf("delete card: %v", err)
 	}
 	return nil
 }
-
-// CountReviewsInDate returns the number of reviews recorded on the given date.
 func (db *Database) CountReviewsInDate(date types.Date) (int, error) {
-	var count int
-	err := db.conn.QueryRow(
-		"select count(*) from reviews where substr(reviewed_at, 1, 10) = ?;",
-		date.String(),
-	).Scan(&count)
+	var c int
+	err := db.q("select count(*) from reviews where substr(reviewed_at, 1, 10)={:d};", dbx.Params{"d": date.String()}).Row(&c)
 	if err != nil {
 		return 0, errs.Newf("count reviews in date: %v", err)
 	}
-	return count, nil
+	return c, nil
 }
 
-// GetAllSessions returns every session ordered chronologically by start time.
 func (db *Database) GetAllSessions() ([]SessionRow, error) {
-	rows, err := db.conn.Query(
-		"select session_id, started_at, ended_at from sessions order by started_at;",
-	)
+	rows, err := db.q("select session_id, started_at, ended_at from sessions order by started_at;", nil).Rows()
 	if err != nil {
 		return nil, errs.Newf("query sessions: %v", err)
 	}
 	defer rows.Close()
-
-	var sessions []SessionRow
+	var out []SessionRow
 	for rows.Next() {
-		var (
-			sessionID  int64
-			startedStr string
-			endedStr   string
-		)
-		if err := rows.Scan(&sessionID, &startedStr, &endedStr); err != nil {
+		var id int64
+		var ss, es string
+		if err := rows.Scan(&id, &ss, &es); err != nil {
 			return nil, errs.Newf("scan session row: %v", err)
 		}
-		startedAt, err := types.ParseTimestamp(startedStr)
+		st, err := types.ParseTimestamp(ss)
 		if err != nil {
 			return nil, err
 		}
-		endedAt, err := types.ParseTimestamp(endedStr)
+		en, err := types.ParseTimestamp(es)
 		if err != nil {
 			return nil, err
 		}
-		sessions = append(sessions, SessionRow{
-			SessionID: sessionID,
-			StartedAt: startedAt,
-			EndedAt:   endedAt,
-		})
+		out = append(out, SessionRow{id, st, en})
 	}
-	return sessions, rows.Err()
+	return out, rows.Err()
 }
 
-// GetReviewsForSession returns all reviews belonging to the given session,
-// ordered chronologically by review time.
 func (db *Database) GetReviewsForSession(sessionID int64) ([]ReviewRow, error) {
-	rows, err := db.conn.Query(
-		`select review_id, card_hash, reviewed_at, grade, stability, difficulty,
-		        interval_raw, interval_days, due_date
-		 from reviews where session_id = ? order by reviewed_at;`,
-		sessionID,
-	)
+	rows, err := db.q(`select review_id, card_hash, reviewed_at, grade, stability, difficulty, interval_raw, interval_days, due_date from reviews where session_id={:sid} order by reviewed_at;`, dbx.Params{"sid": sessionID}).Rows()
 	if err != nil {
 		return nil, errs.Newf("query reviews for session: %v", err)
 	}
 	defer rows.Close()
-
-	var reviews []ReviewRow
+	var out []ReviewRow
 	for rows.Next() {
-		var (
-			reviewID     int64
-			cardHashHex  string
-			reviewedStr  string
-			gradeStr     string
-			stability    float64
-			difficulty   float64
-			intervalRaw  float64
-			intervalDays int64
-			dueDateStr   string
-		)
-		if err := rows.Scan(
-			&reviewID, &cardHashHex, &reviewedStr, &gradeStr,
-			&stability, &difficulty, &intervalRaw, &intervalDays, &dueDateStr,
-		); err != nil {
+		var id int64
+		var hh, at, gr, dueS string
+		var st, diff, raw float64
+		var days int64
+		if err := rows.Scan(&id, &hh, &at, &gr, &st, &diff, &raw, &days, &dueS); err != nil {
 			return nil, errs.Newf("scan review row: %v", err)
 		}
-
-		cardHash, err := types.ParseCardHash(cardHashHex)
+		h, err := types.ParseCardHash(hh)
 		if err != nil {
 			return nil, err
 		}
-		reviewedAt, err := types.ParseTimestamp(reviewedStr)
+		ts, err := types.ParseTimestamp(at)
 		if err != nil {
 			return nil, err
 		}
-		grade, err := fsrs.ParseGrade(gradeStr)
+		grade, err := fsrs.ParseGrade(gr)
 		if err != nil {
 			return nil, errs.Newf("parse grade: %v", err)
 		}
-		dueDate, err := types.ParseDate(dueDateStr)
+		due, err := types.ParseDate(dueS)
 		if err != nil {
 			return nil, err
 		}
-
-		reviews = append(reviews, ReviewRow{
-			ReviewID: reviewID,
-			Data: ReviewRecord{
-				CardHash:     cardHash,
-				ReviewedAt:   reviewedAt,
-				Grade:        grade,
-				Stability:    stability,
-				Difficulty:   difficulty,
-				IntervalRaw:  intervalRaw,
-				IntervalDays: intervalDays,
-				DueDate:      dueDate,
-			},
-		})
+		out = append(out, ReviewRow{ReviewID: id, Data: ReviewRecord{CardHash: h, ReviewedAt: ts, Grade: grade, Stability: st, Difficulty: diff, IntervalRaw: raw, IntervalDays: days, DueDate: due}})
 	}
-	return reviews, rows.Err()
-}
-
-// cardExists returns true when a card with the given hash is present in the database.
-func (db *Database) cardExists(cardHash types.CardHash) (bool, error) {
-	var count int
-	err := db.conn.QueryRow(
-		"select count(*) from cards where card_hash = ?;",
-		cardHash.Hex(),
-	).Scan(&count)
-	if err != nil {
-		return false, errs.Newf("check card existence: %v", err)
-	}
-	return count > 0, nil
+	return out, rows.Err()
 }
