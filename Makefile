@@ -5,8 +5,12 @@ sync-assets:
 	pnpm install
 	pnpm run sync-assets
 
+.PHONY: build-frontend
+build-frontend:
+	cd frontend && pnpm install && pnpm run build
+
 .PHONY: build
-build: sync-assets
+build: sync-assets build-frontend
 	go build -o $(BINARY) ./cmd/$(BINARY)
 
 kill-ports:
