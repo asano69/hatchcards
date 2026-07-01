@@ -8,7 +8,6 @@
 
 
 /node_modules
-/internal/assets/static/katex
 
 /frontend/node_modules
 /internal/assets/static/dist
