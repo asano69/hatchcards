@@ -20,9 +20,34 @@ A plain text-based spaced repetition system. Features:
 
 ## Example
 
+The following JSON file is a valid hashcards deck:
+
+```json
+[
+  {
+    "type": "Q",
+    "question": "How many neurons are there in the human brain?",
+    "answer": "~80 billion."
+  },
+  {
+    "type": "C",
+    "text": "An [agonist] is a ligand that binds to a receptor and [activates it]."
+  },
+  {
+    "type": "Q",
+    "question": "How many synapses are there in a human brain?",
+    "answer": "~100 trillion"
+  },
+  {
+    "type": "C",
+    "text": "In the nervous system, [chemical] communication happens [between] neurons."
+  }
+]
+```
+
 The following Markdown file is a valid hashcards deck:
 
-```
+```markdown
 Q: How many neurons are there in the human brain?
 A: ~80 billion.
 
@@ -33,6 +58,10 @@ A: ~100 trillion
 
 C: In the nervous system, [chemical] communication happens [between] neurons.
 ```
+
+
+
+
 
 ## Tutorial
 
