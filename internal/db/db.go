@@ -74,7 +74,54 @@ func newDatabase(app *pocketbase.PocketBase) (*Database, error) {
 	if err := db.ensureSchema(); err != nil {
 		return nil, err
 	}
+	db.registerHooks()
 	return db, nil
+}
+
+// registerHooks wires up the PocketBase hooks that keep derived data in
+// sync automatically, instead of relying on callers to remember to do it.
+//
+// Stage 1 of the reviews->cards hooks migration: whenever a "reviews" row
+// is inserted, copy its FSRS output onto the matching "cards" row. This
+// replaces the separate UpdateCardPerformance loop that the drill handler
+// used to run after SaveSession.
+func (db *Database) registerHooks() {
+	db.app.OnRecordCreate("reviews").BindFunc(db.syncCardFromReview)
+}
+
+// syncCardFromReview updates the "cards" record referenced by a newly
+// created "reviews" record with that review's FSRS output. It runs after
+// e.Next() so it only applies once the review record has passed
+// validation, and it uses e.App (not db.app) so the update participates in
+// the same transaction as the review insert — if either write fails, both
+// roll back together.
+func (db *Database) syncCardFromReview(e *core.RecordEvent) error {
+	if err := e.Next(); err != nil {
+		return err
+	}
+	review := e.Record
+
+	cardHash, err := types.ParseCardHash(review.GetString("card_hash"))
+	if err != nil {
+		return errs.Newf("sync card from review: %v", err)
+	}
+
+	card, err := e.App.FindFirstRecordByFilter(
+		"cards", "card_hash = {:hash}", dbx.Params{"hash": cardHash.Hex()},
+	)
+	if err != nil {
+		return errs.Newf("sync card from review: card %s not found: %v", cardHash.Hex(), err)
+	}
+
+	card.Set("last_reviewed_at", review.GetString("reviewed_at"))
+	card.Set("stability", review.GetFloat("stability"))
+	card.Set("difficulty", review.GetFloat("difficulty"))
+	card.Set("interval_raw", review.GetFloat("interval_raw"))
+	card.Set("interval_days", review.GetInt("interval_days"))
+	card.Set("due_date", review.GetString("due_date"))
+	card.Set("review_count", card.GetInt("review_count")+1)
+
+	return e.App.Save(card)
 }
 
 func (db *Database) Close() error                        { return db.app.ResetBootstrapState() }

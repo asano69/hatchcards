@@ -328,3 +328,64 @@ func TestDueTodayFutureCard(t *testing.T) {
 		t.Error("card with future due date should NOT appear in DueToday")
 	}
 }
+
+// TestReviewCreateHookSyncsCardPerformance verifies that inserting a review
+// record (via SaveSession) automatically updates the matching card's cached
+// performance fields, without an explicit UpdateCardPerformance call. This
+// covers stage 1 of the reviews->cards hooks migration.
+func TestReviewCreateHookSyncsCardPerformance(t *testing.T) {
+	db := openMemory(t)
+	cardHash := types.HashBytes([]byte("a"))
+	now := types.Now()
+
+	if err := db.InsertCard(cardHash, now); err != nil {
+		t.Fatalf("InsertCard: %v", err)
+	}
+
+	review := ReviewRecord{
+		CardHash:     cardHash,
+		ReviewedAt:   now,
+		Grade:        fsrs.GradeGood,
+		Stability:    3.17,
+		Difficulty:   5.28,
+		IntervalRaw:  3.17,
+		IntervalDays: 3,
+		DueDate:      now.Date(),
+	}
+	if err := db.SaveSession(now, now, []ReviewRecord{review}); err != nil {
+		t.Fatalf("SaveSession: %v", err)
+	}
+
+	perf, err := db.GetCardPerformance(cardHash)
+	if err != nil {
+		t.Fatalf("GetCardPerformance: %v", err)
+	}
+	if perf.IsNew() {
+		t.Fatal("expected reviewed performance after review insert, got new")
+	}
+	rp := perf.Reviewed()
+	if rp.Stability != review.Stability {
+		t.Errorf("Stability: got %f, want %f", rp.Stability, review.Stability)
+	}
+	if rp.Difficulty != review.Difficulty {
+		t.Errorf("Difficulty: got %f, want %f", rp.Difficulty, review.Difficulty)
+	}
+	if rp.IntervalDays != review.IntervalDays {
+		t.Errorf("IntervalDays: got %d, want %d", rp.IntervalDays, review.IntervalDays)
+	}
+	if rp.ReviewCount != 1 {
+		t.Errorf("ReviewCount: got %d, want 1", rp.ReviewCount)
+	}
+
+	// A second review should bump review_count to 2.
+	if err := db.SaveSession(now, now, []ReviewRecord{review}); err != nil {
+		t.Fatalf("second SaveSession: %v", err)
+	}
+	perf2, err := db.GetCardPerformance(cardHash)
+	if err != nil {
+		t.Fatalf("GetCardPerformance (2nd): %v", err)
+	}
+	if perf2.Reviewed().ReviewCount != 2 {
+		t.Errorf("ReviewCount after 2nd review: got %d, want 2", perf2.Reviewed().ReviewCount)
+	}
+}

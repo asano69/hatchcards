@@ -346,7 +346,6 @@ func (h *handler) applyAction(action string) {
 	}
 }
 
-// finishSession saves the session to the database and marks it as finished.
 func (h *handler) finishSession() {
 	if h.sessionSaved || h.sess.Total() == 0 {
 		return
@@ -354,6 +353,11 @@ func (h *handler) finishSession() {
 	h.sess.Finish()
 	h.sessionSaved = true
 	h.endedAt = time.Now()
+
+	// Card performance (stability, difficulty, due date, ...) is no longer
+	// updated here: the "reviews" OnRecordCreate hook in internal/db keeps
+	// each card's cached performance in sync as every review row is
+	// inserted, inside the same transaction as SaveSession below.
 	if err := h.db.SaveSession(
 		h.sess.StartedAt,
 		types.NewTimestamp(h.endedAt),
@@ -363,16 +367,6 @@ func (h *handler) finishSession() {
 		return
 	}
 	fmt.Printf("[session] saved: %d review(s) written to database\n", len(h.sess.Done))
-
-	for _, cr := range h.sess.Done {
-		if err := h.db.UpdateCardPerformance(
-			cr.Card.Hash(),
-			types.ReviewedCardPerformance(cr.Performance),
-		); err != nil {
-			fmt.Printf("[session] warning: update card performance hash=%s: %v\n",
-				shortHash(cr.Card.Hash()), err)
-		}
-	}
 }
 
 // resetSession loads fresh due cards and replaces the current session state.
