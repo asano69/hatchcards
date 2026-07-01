@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, "..");
 const targets = [
   {
     name: "katex",
-    src: path.join(root, "node_modules", "katex", "dist"),
+    src: path.join(root, "frontend", "node_modules", "katex", "dist"),
     dest: path.join(root, "internal", "assets", "static", "katex"),
   },
 ];

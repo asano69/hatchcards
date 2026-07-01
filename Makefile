@@ -1,13 +1,15 @@
 BINARY := hashcards
+.PHONY: frontend-deps
+frontend-deps:
+	cd frontend && pnpm install
 
 .PHONY: sync-assets
-sync-assets:
-	pnpm install
-	pnpm run sync-assets
+sync-assets: frontend-deps
+	node scripts/sync-assets.mjs
 
 .PHONY: build-frontend
-build-frontend:
-	cd frontend && pnpm install && pnpm run build
+build-frontend: frontend-deps
+	cd frontend && pnpm run build
 
 .PHONY: build
 build: sync-assets build-frontend

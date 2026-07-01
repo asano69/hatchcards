@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@solidjs/router": "^0.16.1",
+    "katex": "^0.16.9",
     "pocketbase": "^0.27.0",
     "solid-js": "^1.9.12",
     "vega-embed": "^7.1.0"

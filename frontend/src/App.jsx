@@ -10,6 +10,7 @@ async function fetchSessions() {
   return res.json();
 }
 
+// frontend/src/App.jsx
 function SessionItem(props) {
   return (
     <li>
