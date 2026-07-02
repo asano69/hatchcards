@@ -40,7 +40,7 @@ type Collection struct {
 	DB *db.Database
 }
 
-// Load walks root for "*.md" files, parses every deck it finds, inserts any
+// Load walks root for "*.json" files, parses every deck it finds, inserts any
 // new cards into database, and returns the populated Collection.
 // Cards that exist in the database but are no longer present in any deck file
 // are left untouched; use the "orphans delete" command to remove them.
