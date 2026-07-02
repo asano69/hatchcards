@@ -28,6 +28,7 @@ func main() {
 	root.Use = "hashcards"
 	root.Short = "A spaced-repetition flashcard tool"
 	root.SilenceUsage = true
+	root.Version = "0.0.1"
 
 	root.AddCommand(
 		checkCmd(),
