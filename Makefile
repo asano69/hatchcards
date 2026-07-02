@@ -23,6 +23,18 @@ init: build kill-ports
 	#./hashcards migrate up --dir=pb_data
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
 
+# ----------
+
+frontend:
+	cd frontend && pnpm run dev
+
+
+
+test:
+	go test ./...
+
+
+# -----------
 
 
 .PHONY: build-container

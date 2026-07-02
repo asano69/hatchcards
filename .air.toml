@@ -1,0 +1,15 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o tmp/main ."
+bin = "tmp/main"
+args_bin = ["serve", "--http=127.0.0.1:3000", "--dir=pb_data"]
+include_ext = ["go"]
+exclude_dir = ["tmp", "pb_data", "pb_migrations"]
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true
