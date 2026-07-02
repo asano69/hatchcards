@@ -79,7 +79,7 @@ Start drilling:
 $ hashcards serve
 ```
 
-This opens a web interface at `http://localhost:8000` where you can review your
+This opens a web interface at `http://localhost:3000` where you can review your
 cards. The interface is simple: you read the question, mentally recall the
 answer, and click reveal (or press space). Then you grade yourself on how you
 did, with one of four choices:
@@ -94,7 +94,6 @@ something, you can undo (shortcut: `u`). The session ends when every card has
 been graded "Good" or higher. You can end the session prematurely by clicking
 "End", this will save your changes.
 
-To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
 
 ## Commands
 
@@ -255,6 +254,6 @@ json中間ファイル
 => https://deepwiki.com/asano69/hashcards
 
 ---
-
+To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
 => https://gutenberg.org/cache/epub/47748/pg47748-images.html  
 => https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up
