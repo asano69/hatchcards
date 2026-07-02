@@ -70,21 +70,28 @@ json --> html
 
 ## Tutorial
 
-Create a directory for your flashcards, and add a Markdown file with some cards:
+Create a directory for your flashcards, and add a JOSN file with some cards:
 
 ```bash
 $ mkdir cards
 $ cd cards
-$ cat > Geography.md << 'EOF'
-Q: What is Coulomb's constant?
-A: The proportionality constant of the electric force.
-
-Q: What is an object with zero net charge called?
-A: Neutral.
+$ cat > Geography.json << 'EOF'
+[
+  {
+    "type": "Q",
+    "question": "What is Coulomb's constant?",
+    "answer": "The proportionality constant of the electric force."
+  },
+  {
+    "type": "Q",
+    "question": "What is an object with zero net charge called?",
+    "answer": "Neutral."
+  }
+]
 EOF
 ```
 
-A Markdown file is called a "deck", and the name of the file, sans extension, is
+A JSON file is called a "deck", and the name of the file, sans extension, is
 the name of the deck. This will be shown on top of the flashcard during reviews,
 this saves you from having to specify the context in each of the flashcards.
 
