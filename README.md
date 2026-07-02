@@ -62,7 +62,7 @@ C: In the nervous system, [chemical] communication happens [between] neurons.
 
 ```mermaid
 graph LR
-markdown --> json
+card --> json
 json --> html
 ```
 
