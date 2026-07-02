@@ -1,5 +1,5 @@
 import { createSignal, onMount, onCleanup, createEffect, Switch, Match } from "solid-js";
-import { useSearchParams } from "@solidjs/router";
+import { useSearchParams, useNavigate } from "@solidjs/router";
 import katex from "katex";
 import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
@@ -24,6 +24,7 @@ async function postAction(deck, action) {
 export default function Drill() {
   const [searchParams] = useSearchParams();
   const deck = () => searchParams.deck || "";
+  const navigate = useNavigate();
 
   const [state, setState] = createSignal(null);
 
@@ -48,9 +49,11 @@ export default function Drill() {
     onCleanup(() => document.removeEventListener("keydown", handler));
   });
 
+  // Runs a server-side action first, then navigates within the SPA router
+  // (no full page reload, unlike the previous location.href approach).
   const goHome = async (finishAction) => {
     await run(finishAction);
-    location.href = "/";
+    navigate("/");
   };
 
   return (
