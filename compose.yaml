@@ -7,6 +7,6 @@ services:
     volumes:
       - ./config.toml:/hashcards/config.toml:ro
       - ./cards:/hashcards/cards
-      - ./pb_data:/hashcards/pb_data
+      - ./pb_data:/hashcards/data
     environment:
-      - TZ=Azia/Tokyo
+      - TZ=Asia/Tokyo
