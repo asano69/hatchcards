@@ -5,7 +5,7 @@ package db
 
 import (
 	"database/sql"
-	_ "embed"
+
 	"errors"
 	"os"
 	"strings"
@@ -17,9 +17,6 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
-
-//go:embed schema.sql
-var schemaSQL string
 
 type ReviewRecord struct {
 	CardHash     types.CardHash
@@ -125,9 +122,8 @@ func (db *Database) syncCardFromReview(e *core.RecordEvent) error {
 	return e.App.Save(card)
 }
 
-func (db *Database) Close() error                        { return db.app.ResetBootstrapState() }
-func (db *Database) App() *pocketbase.PocketBase         { return db.app }
-func (db *Database) q(s string, p dbx.Params) *dbx.Query { return db.app.DB().NewQuery(s).Bind(p) }
+func (db *Database) Close() error                { return db.app.ResetBootstrapState() }
+func (db *Database) App() *pocketbase.PocketBase { return db.app }
 
 func (db *Database) ensureSchema() error {
 	if err := db.ensureCollection("cards", func(c *core.Collection) {
@@ -185,15 +181,6 @@ func (db *Database) ensureCollection(name string, configure func(*core.Collectio
 		return errs.Newf("ensure PocketBase collection %q: %v", name, err)
 	}
 	return nil
-}
-
-func (db *Database) probeSchemaExists() (bool, error) {
-	var count int
-	err := db.q("select count(*) from sqlite_master where type='table' AND name={:name};", dbx.Params{"name": "cards"}).Row(&count)
-	if err != nil {
-		return false, errs.Newf("probe schema: %v", err)
-	}
-	return count > 0, nil
 }
 
 // findCardRecord looks up the "cards" record with the given hash.
