@@ -1,6 +1,7 @@
 import { createSignal, onMount, onCleanup, createEffect, Switch, Match } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import katex from "katex";
+import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
 
 async function fetchState(deck) {
