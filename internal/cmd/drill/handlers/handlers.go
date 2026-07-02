@@ -29,6 +29,9 @@ import (
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/rng"
 	"github.com/asano69/hashcards/internal/types"
+	"github.com/pocketbase/pocketbase/apis"
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/router"
 )
 
 // mimeTypes maps lowercase file extensions to Content-Type values.
@@ -182,18 +185,21 @@ func (m *Manager) get(deckKey string) (*handler, bool) {
 	return h, ok
 }
 
-// RegisterAPI attaches the JSON drill API and the shared media route to r.
-func RegisterAPI(r *http.ServeMux, m *Manager) {
-	r.HandleFunc("GET /api/drill/state", m.handleState)
-	r.HandleFunc("POST /api/drill/action", m.handleAction)
-	r.HandleFunc("GET /drill/file/{path...}", m.handleFile)
+// RegisterAPI attaches the drill API and the shared media route directly to
+// PocketBase's router, so responses go through the same JSON/error helpers
+// as the rest of the app instead of a separate net/http.ServeMux.
+func RegisterAPI(r *router.Router[*core.RequestEvent], m *Manager, collectionRoot string) {
+	r.GET("/api/drill/state", m.handleState)
+	r.POST("/api/drill/action", m.handleAction)
+	// Same mechanism already used for /assets/{path...} in serve.go — no
+	// need to hand-roll MIME detection or os.Stat/http.ServeFile ourselves.
+	r.GET("/drill/file/{path...}", apis.Static(os.DirFS(collectionRoot), false))
 }
 
-func (m *Manager) handleState(w http.ResponseWriter, r *http.Request) {
-	h, ok := m.get(r.URL.Query().Get("deck"))
+func (m *Manager) handleState(e *core.RequestEvent) error {
+	h, ok := m.get(e.Request.URL.Query().Get("deck"))
 	if !ok {
-		http.Error(w, `{"error":"unknown deck"}`, http.StatusNotFound)
-		return
+		return e.NotFoundError("unknown deck", nil)
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -203,27 +209,26 @@ func (m *Manager) handleState(w http.ResponseWriter, r *http.Request) {
 	if len(h.sess.Done) == 0 && !h.sess.Revealed && !h.sess.IsFinished() {
 		h.resetSession()
 	}
-	writeJSON(w, h.stateResponse())
+	return e.JSON(http.StatusOK, h.stateResponse())
 }
 
-func (m *Manager) handleAction(w http.ResponseWriter, r *http.Request) {
-	h, ok := m.get(r.URL.Query().Get("deck"))
+func (m *Manager) handleAction(e *core.RequestEvent) error {
+	h, ok := m.get(e.Request.URL.Query().Get("deck"))
 	if !ok {
-		http.Error(w, `{"error":"unknown deck"}`, http.StatusNotFound)
-		return
+		return e.NotFoundError("unknown deck", nil)
 	}
+
 	var body struct {
 		Action string `json:"action"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, `{"error":"bad request body"}`, http.StatusBadRequest)
-		return
+	if err := e.BindBody(&body); err != nil {
+		return e.BadRequestError("invalid request body", err)
 	}
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.applyAction(body.Action)
-	writeJSON(w, h.stateResponse())
+	return e.JSON(http.StatusOK, h.stateResponse())
 }
 
 // handleFile serves a media file from the collection root. It is shared by

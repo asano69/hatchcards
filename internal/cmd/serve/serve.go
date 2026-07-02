@@ -3,23 +3,18 @@
 package serve
 
 import (
-	"encoding/json"
 	"fmt"
-
 	"io"
 	"io/fs"
 	"net/http"
 	"net/url"
 
 	"github.com/asano69/hashcards/internal/assets"
-
 	"github.com/asano69/hashcards/internal/cmd/drill/handlers"
-
 	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/config"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/fsrs"
-
 	"github.com/asano69/hashcards/internal/types"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -55,23 +50,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		MaxInterval:  cfg.FSRS.MaxInterval,
 	}
 
-	router := http.NewServeMux()
-
-	// GET /api/sessions reloads the collection from disk on every request so
-	// that decks/cards added or removed since startup are reflected in the
-	// session list and the retrievability percentages shown on the index
-	// page. This mirrors the reload that the old server-rendered "/" route
-	// used to perform before rendering index.html.
-	router.HandleFunc("GET /api/sessions", func(w http.ResponseWriter, r *http.Request) {
-		freshCol, err := collection.Load(cfg.Data.Root, database)
-		if err != nil {
-			freshCol = col
-		}
-		sessionJSON, _ := json.Marshal(buildSessionList(cfg, freshCol, database))
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(sessionJSON)
-	})
-
 	manager := handlers.NewManager()
 	for _, sc := range cfg.Sessions {
 		var cardLimit, newCardLimit *int
@@ -97,30 +75,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 			return fmt.Errorf("setup session %q: %w", sc.Name, err)
 		}
 	}
-	handlers.RegisterAPI(router, manager)
-
-	router.HandleFunc("GET /drill", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeFileFS(w, r, assets.FS, "index.html")
-	})
-
-	// GET / serves the same static shell as /drill; index.js's Solid Router
-	// decides which screen to render based on the current path.
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeFileFS(w, r, assets.FS, "index.html")
-	})
-
-	// Vite's public/ directory (favicon.svg etc.) is copied to the root of
-	// the build output, so it's served directly rather than under /assets/.
-	router.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/svg+xml")
-		http.ServeFileFS(w, r, assets.FS, "favicon.svg")
-	})
 
 	// assetsFS exposes just the "assets/" subdirectory that Vite's default
 	// (unprefixed) base writes hashed JS/CSS bundles into, so they're served
@@ -132,8 +86,39 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// GET /api/sessions reloads the collection from disk on every request
+		// so decks/cards added or removed since startup are reflected.
+		e.Router.GET("/api/sessions", func(re *core.RequestEvent) error {
+			freshCol, err := collection.Load(cfg.Data.Root, database)
+			if err != nil {
+				freshCol = col
+			}
+			return re.JSON(http.StatusOK, buildSessionList(cfg, freshCol, database))
+		})
+
+		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
+
 		e.Router.GET("/assets/{path...}", apis.Static(assetsFS, false))
-		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
+
+		// Solid Router decides which screen to render client-side, so both
+		// /drill and / serve the same static shell.
+		serveShell := func(re *core.RequestEvent) error {
+			re.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
+			http.ServeFileFS(re.Response, re.Request, assets.FS, "index.html")
+			return nil
+		}
+		e.Router.GET("/drill", serveShell)
+		e.Router.GET("/", serveShell)
+
+		// Vite's public/ directory (favicon.svg etc.) is copied to the root
+		// of the build output, so it's served directly rather than under
+		// /assets/.
+		e.Router.GET("/favicon.svg", func(re *core.RequestEvent) error {
+			re.Response.Header().Set("Content-Type", "image/svg+xml")
+			http.ServeFileFS(re.Response, re.Request, assets.FS, "favicon.svg")
+			return nil
+		})
+
 		return e.Next()
 	})
 
