@@ -1,4 +1,0 @@
-Q: aaa
-A: affffff
-
----

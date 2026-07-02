@@ -25,20 +25,12 @@ max_interval = 256.0
 title = "All"
 
 [[session]]
-title = "Long text"
-deck = "Long text"
-
-[[session]]
 title = "Math"
 deck = "Math"
 
 [[session]]
 #title = "Chemical"
 deck = "Chemistry"
-
-[[session]]
-title = "no art, no life"
-deck = "no art, no life"
 
 [[session]]
 #title = "Chemical"
