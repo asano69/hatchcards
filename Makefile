@@ -1,46 +1,39 @@
 BINARY := hashcards
+
 .PHONY: frontend-deps
 frontend-deps:
 	cd frontend && pnpm install
 
-.PHONY: frontend-build
-frontend-build:
+.PHONY: build-frontend
+build-frontend: frontend-deps
 	cd frontend && pnpm run build
+
+.PHONY: build
+build: build-frontend
+	go build -o $(BINARY) ./cmd/$(BINARY)
 
 
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
 	@lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
 
-server: kill-ports
-	cd frontend && pnpm watch &
-	air &
 
-
-init: build kill-ports
+.PHONY: server
+server: kill-ports build
 	#./hashcards migrate up --dir=pb_data
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
-
-
-
-.PHONY: backend
-backend:
 	./$(BINARY) serve --config=config.toml
 
-frontend-dev:
-	cd frontend && pnpm dev
+# --------------
 
+# port: 3001
+dev-front:
+	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm dev" "air"
 
-# ----------
-.PHONY: frontend
-frontend: kill-ports
-	@echo "Starting backend with air..."
-	@air & \
-	BACKEND_PID=$$!; \
-	echo "Starting frontend dev server..."; \
-	cd frontend && pnpm run dev; \
-	echo "Stopping backend (PID: $$BACKEND_PID)..."; \
-	kill $$BACKEND_PID 2>/dev/null || true
+# port: 3000
+dev-back:
+	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm watch" "air"
+
 
 
 test:
