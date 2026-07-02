@@ -128,39 +128,6 @@
   @apply w-full pl-6 md:pl-12;
 }
 
-.heatmap {
-  --heatmap-empty: #ebedf0;
-  --heatmap-border: #d0d7de;
-  @apply mt-4 mb-8 overflow-x-auto;
-}
-@media (prefers-color-scheme: dark) {
-  .heatmap {
-    --heatmap-empty: #1f1f1f;
-    --heatmap-border: #333333;
-  }
-}
-.heatmap table {
-  border-spacing: 3px;
-  @apply mx-auto border-separate;
-}
-.heatmap td.cell {
-  border: 1px solid var(--heatmap-border);
-  @apply h-4 w-4 rounded-[3px];
-}
-.heatmap td.cell.empty {
-  @apply border-transparent bg-transparent!;
-}
-.heatmap.empty {
-  @apply p-6 text-center text-[#888] italic;
-}
-
-.shutdown-container {
-  @apply mt-12 text-center;
-}
-.shutdown-container form {
-  @apply inline-block;
-}
-
 /* ---------- Rendered card content ----------
  * Cards are raw HTML strings produced by goldmark on the server and
  * injected via innerHTML, so this content cannot carry Tailwind
@@ -253,3 +220,38 @@
 .rich-text .katex {
   @apply text-[1em];
 }
+
+/* ----- heatmap output is not implemented yet. ----- 
+.heatmap {
+  --heatmap-empty: #ebedf0;
+  --heatmap-border: #d0d7de;
+  @apply mt-4 mb-8 overflow-x-auto;
+}
+@media (prefers-color-scheme: dark) {
+  .heatmap {
+    --heatmap-empty: #1f1f1f;
+    --heatmap-border: #333333;
+  }
+}
+.heatmap table {
+  border-spacing: 3px;
+  @apply mx-auto border-separate;
+}
+.heatmap td.cell {
+  border: 1px solid var(--heatmap-border);
+  @apply h-4 w-4 rounded-[3px];
+}
+.heatmap td.cell.empty {
+  @apply border-transparent bg-transparent!;
+}
+.heatmap.empty {
+  @apply p-6 text-center text-[#888] italic;
+}
+
+.shutdown-container {
+  @apply mt-12 text-center;
+}
+.shutdown-container form {
+  @apply inline-block;
+}
+ * -------------------------------------------------- */
