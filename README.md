@@ -251,9 +251,10 @@ json中間ファイル
 © 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.
 
 ---
-=> https://deepwiki.com/asano69/hashcards
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
 ---
+
 To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
 => https://gutenberg.org/cache/epub/47748/pg47748-images.html  
 => https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up
