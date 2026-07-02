@@ -145,26 +145,49 @@ function Card(props) {
           <div class="card-content" innerHTML={card().revealed ? card().back : card().front} />
         </div>
       </div>
-      <div class="controls">
-        <input
-          id="undo" class="btn" type="button" value="Undo"
-          title="Undo last action. Shortcut: u."
-          disabled={!card().canUndo}
-          onClick={() => props.onAction("Undo")}
-        />
-        <div class="spacer" />
-        <Switch>
-          <Match when={card().revealed}>
-            <div class="grades">
-              <GradeButtons card={card()} onAction={props.onAction} />
-            </div>
-          </Match>
-          <Match when={true}>
-            <input id="reveal" class="btn" type="button" value="Reveal" title="Show the answer. Shortcut: space." onClick={() => props.onAction("Reveal")} />
-          </Match>
-        </Switch>
-        <div class="spacer" />
-        <input id="end" class="btn" type="button" value="End" title="End the session (changes are saved)" onClick={() => props.onAction("End")} />
+<div class="controls">
+        <form onSubmit={(e) => e.preventDefault()}>
+          <input 
+            id="undo" 
+            class="btn" 
+            type="button" 
+            value="Undo" 
+            title="Undo last action. Shortcut: u."
+            disabled={!card().canUndo}
+            onClick={() => props.onAction("Undo")}
+          />
+          
+          <div class="spacer" />
+          
+          <Switch>
+            <Match when={card().revealed}>
+              <div class="grades">
+                <GradeButtons card={card()} onAction={props.onAction} />
+              </div>
+            </Match>
+            <Match when={true}>
+              <input 
+                id="reveal" 
+                class="btn" 
+                type="button" 
+                value="Reveal" 
+                title="Show the answer. Shortcut: space." 
+                onClick={() => props.onAction("Reveal")} 
+              />
+            </Match>
+          </Switch>
+          
+          <div class="spacer" />
+          
+          <input 
+            id="end" 
+            class="btn" 
+            type="button" 
+            value="End" 
+            title="End the session (changes are saved)" 
+            onClick={() => props.onAction("End")} 
+          />
+        </form>
       </div>
     </div>
   );
