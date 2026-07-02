@@ -25,15 +25,17 @@ server: kill-ports build
 	./$(BINARY) serve --config=config.toml
 
 # --------------
+.PHONY: clean
+	rm -fr ./tmp/ # air
 
 # port: 3001
 .PHONY: dev-front
-dev-front:
+dev-front: clean
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm dev" "air"
 
 # port: 3000
 .PHONY: dev-back
-dev-back:
+dev-back: clean
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm watch" "air"
 
 
