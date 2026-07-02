@@ -71,7 +71,7 @@ func HTMLFront(card types.Card, deckFilePath string, fileMountBase string) (stri
 		if err != nil {
 			return "", err
 		}
-		return strings.ReplaceAll(rendered, clozePlaceholder, `<span class="cloze-blank">[...]</span>`), nil
+		return strings.ReplaceAll(rendered, clozePlaceholder, `<span class="cloze">[...]</span>`), nil
 	}
 }
 
@@ -100,7 +100,7 @@ func HTMLBack(card types.Card, deckFilePath string, fileMountBase string) (strin
 		if err != nil {
 			return "", err
 		}
-		revealSpan := `<span class="cloze-answer">` + renderedDeleted + `</span>`
+		revealSpan := `<span class="cloze-reveal">` + renderedDeleted + `</span>`
 		return strings.ReplaceAll(rendered, clozePlaceholder, revealSpan), nil
 	}
 }
