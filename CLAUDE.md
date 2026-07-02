@@ -26,4 +26,4 @@ hashcards is a plain-text spaced repetition system written in Rust. It parses Ma
 
 ## Frontend
 - SSRからSPA/CSRに段階的に移行中。go-templateのみのアーキテクチャだったがPocketBaseやSolid.jsをつかう設計にかえた。
-- frontendをsolid.js+tailwindをつかってコンポーネントベースにリファクタリング。
+- frontendをsolid.js + **tailwind v4**をつかってコンポーネントベースにリファクタリング。
