@@ -423,7 +423,7 @@ Note: "timestamp format" is `YYYY-MM-DDTHH:MM:SS.MMM`, e.g. `2025-10-04T17:09:51
 [rustup]: https://rustup.rs/
 
 ## License
-
+© 2026- by asano69. Licensed under the Apache 2.0 license.
 © 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.
 
 ---
