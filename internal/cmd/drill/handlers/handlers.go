@@ -31,6 +31,7 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
+	"github.com/sirupsen/logrus"
 )
 
 // fileMountBase is the fixed URL prefix used to rewrite <img>/<audio> src
@@ -160,7 +161,13 @@ func (m *Manager) AddSession(
 	if deckFilter != nil {
 		deckLabel = fmt.Sprintf("deck=%q", *deckFilter)
 	}
-	fmt.Printf("[session] key=%q %s cards=%d\n", deckKey, deckLabel, len(due))
+
+	logrus.WithFields(logrus.Fields{
+		"key":   deckKey,
+		"deck":  deckLabel,
+		"cards": len(due),
+	}).Info("drill session created")
+
 	return nil
 }
 
@@ -280,14 +287,17 @@ func (h *handler) applyAction(action string) {
 			newPerf, ok := h.sess.Grade(grade)
 			if ok {
 				last := h.sess.Done[len(h.sess.Done)-1]
-				fmt.Printf("[grade] hash=%s grade=%s | stability %.2f→%.2f | difficulty %.2f→%.2f | interval %dd→%dd | due=%s\n",
-					shortHash(last.Card.Hash()),
-					action,
-					beforeStability, newPerf.Stability,
-					beforeDifficulty, newPerf.Difficulty,
-					beforeInterval, newPerf.IntervalDays,
-					newPerf.DueDate.String(),
-				)
+				logrus.WithFields(logrus.Fields{
+					"hash":                 shortHash(last.Card.Hash()),
+					"grade":                action,
+					"stability_before":     beforeStability,
+					"stability_after":      newPerf.Stability,
+					"difficulty_before":    beforeDifficulty,
+					"difficulty_after":     newPerf.Difficulty,
+					"interval_before_days": beforeInterval,
+					"interval_after_days":  newPerf.IntervalDays,
+					"due":                  newPerf.DueDate.String(),
+				}).Info("card graded")
 			}
 			if h.sess.Remaining() == 0 {
 				h.finishSession()
@@ -313,10 +323,10 @@ func (h *handler) finishSession() {
 		types.NewTimestamp(h.endedAt),
 		h.sess.ToReviewRecords(),
 	); err != nil {
-		fmt.Printf("[session] warning: save session: %v\n", err)
+		logrus.WithError(err).Warn("save session failed")
 		return
 	}
-	fmt.Printf("[session] saved: %d review(s) written to database\n", len(h.sess.Done))
+	logrus.WithField("reviews", len(h.sess.Done)).Info("session saved")
 }
 
 // resetSession loads fresh due cards and replaces the current session state.
@@ -324,14 +334,14 @@ func (h *handler) finishSession() {
 func (h *handler) resetSession() {
 	col, err := collection.Load(h.col.Root, h.db)
 	if err != nil {
-		fmt.Printf("[session] warning: reset session load: %v\n", err)
+		logrus.WithError(err).Warn("reset session: load collection failed")
 		return
 	}
 	h.col = col
 
 	due, err := col.DueToday(types.Today())
 	if err != nil {
-		fmt.Printf("[session] warning: reset session due today: %v\n", err)
+		logrus.WithError(err).Warn("reset session: due today failed")
 		return
 	}
 	due = FilterDue(due, h.cardLimit, h.newCardLimit, h.deckFilter)
@@ -351,7 +361,7 @@ func (h *handler) resetSession() {
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
 
-	fmt.Printf("[session] reset: %d card(s) due\n", len(due))
+	logrus.WithField("cards_due", len(due)).Warn("session reset")
 }
 
 func actionToGrade(action string) fsrs.Grade {

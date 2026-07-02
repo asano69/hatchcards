@@ -4,7 +4,7 @@ package serve
 
 import (
 	"fmt"
-	"io"
+
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -19,6 +19,8 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+
+	"github.com/sirupsen/logrus"
 )
 
 // sessionInfo is the JSON representation returned by /api/sessions.
@@ -34,7 +36,7 @@ type sessionInfo struct {
 
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
-func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
+func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 	database, err := db.New(app)
 	if err != nil {
 		return err
@@ -122,11 +124,13 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		return e.Next()
 	})
 
-	fmt.Fprintf(out, "Listening on http://%s\n", addr)
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	logrus.WithField("addr", addr).Info("listening")
 	return apis.Serve(app, apis.ServeConfig{
 		HttpAddr:        addr,
 		ShowStartBanner: false,
 	})
+
 }
 
 // computeAvgRetrieval returns the average retrievability of all cards in the

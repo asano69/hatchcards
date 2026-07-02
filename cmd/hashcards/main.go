@@ -133,7 +133,7 @@ func serveCmd(app *pocketbase.PocketBase) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config %s: %w", configPath, err)
 			}
-			return serve.Run(app, cfg, os.Stdout)
+			return serve.Run(app, cfg)
 		},
 	}
 	cmd.Flags().StringVar(&configPath, "config", "config.toml",
