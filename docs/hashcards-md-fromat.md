@@ -1,3 +1,25 @@
+## Example
+The following Markdown file is a valid hashcards deck:
+
+```markdown
+Q: How many neurons are there in the human brain?
+A: ~80 billion.
+
+C: An [agonist] is a ligand that binds to a receptor and [activates it].
+
+Q: How many synapses are there in a human brain?
+A: ~100 trillion
+
+C: In the nervous system, [chemical] communication happens [between] neurons.
+```
+
+```mermaid
+graph LR
+card --> json
+json --> html
+```
+
+
 ## Format
 
 This section describes the text format used by hashcards.
