@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
+/* Semantic color tokens live in @theme so Tailwind generates matching
+ * utilities (bg-bg, text-text, border-border, ...). Default values here
+ * are the light theme; the dark-mode override below reassigns the same
+ * variable names, so components can keep referencing var(--color-*)
+ * once instead of pairing every utility with a dark: variant. */
 @theme {
   --font-serif:
     "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times", serif;
-}
 
-/* Semantic color tokens: each variable already encodes its light/dark
- * value via the media query below, so a component references the
- * variable once instead of pairing every utility with a dark: variant. */
-:root {
   --color-bg: #ffffff;
   --color-text: #000000;
   --color-panel: #f8f8f8;
@@ -42,15 +42,17 @@
   }
 }
 
-body {
-  @apply h-screen w-screen;
-  font-family: var(--font-serif);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
+@layer base {
+  body {
+    @apply h-screen w-screen;
+    font-family: var(--font-serif);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
 
-strong {
-  font-weight: bold;
+  strong {
+    font-weight: bold;
+  }
 }
 
 /* ---------- Drill screen layout ---------- */
