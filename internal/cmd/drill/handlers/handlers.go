@@ -13,7 +13,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,21 +32,6 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 )
-
-// mimeTypes maps lowercase file extensions to Content-Type values.
-var mimeTypes = map[string]string{
-	".png":  "image/png",
-	".jpg":  "image/jpeg",
-	".jpeg": "image/jpeg",
-	".gif":  "image/gif",
-	".svg":  "image/svg+xml",
-	".webp": "image/webp",
-	".mp3":  "audio/mpeg",
-	".wav":  "audio/wav",
-	".ogg":  "audio/ogg",
-	".mp4":  "video/mp4",
-	".webm": "video/webm",
-}
 
 // fileMountBase is the fixed URL prefix used to rewrite <img>/<audio> src
 // attributes during rendering. It no longer varies per deck since file
@@ -191,8 +175,9 @@ func (m *Manager) get(deckKey string) (*handler, bool) {
 func RegisterAPI(r *router.Router[*core.RequestEvent], m *Manager, collectionRoot string) {
 	r.GET("/api/drill/state", m.handleState)
 	r.POST("/api/drill/action", m.handleAction)
-	// Same mechanism already used for /assets/{path...} in serve.go — no
-	// need to hand-roll MIME detection or os.Stat/http.ServeFile ourselves.
+	// apis.Static already handles Content-Type detection, path traversal
+	// guards, and file existence checks, so there is no need to hand-roll
+	// a MIME table or an os.Stat/http.ServeFile handler here.
 	r.GET("/drill/file/{path...}", apis.Static(os.DirFS(collectionRoot), false))
 }
 
@@ -229,46 +214,6 @@ func (m *Manager) handleAction(e *core.RequestEvent) error {
 	defer h.mu.Unlock()
 	h.applyAction(body.Action)
 	return e.JSON(http.StatusOK, h.stateResponse())
-}
-
-// handleFile serves a media file from the collection root. It is shared by
-// every deck since collectionRoot is the same collection.Collection for all
-// sessions.
-func (m *Manager) handleFile(w http.ResponseWriter, r *http.Request) {
-	var root string
-	for _, h := range m.sessions {
-		root = h.col.Root
-		break
-	}
-	if root == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	relPath := strings.TrimPrefix(r.URL.Path, "/drill/file/")
-	if strings.Contains(relPath, "..") {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-	absPath := filepath.Join(root, filepath.FromSlash(relPath))
-
-	info, err := os.Stat(absPath)
-	if err != nil || !info.Mode().IsRegular() {
-		http.NotFound(w, r)
-		return
-	}
-	ext := strings.ToLower(filepath.Ext(absPath))
-	ct, ok := mimeTypes[ext]
-	if !ok {
-		ct = "application/octet-stream"
-	}
-	w.Header().Set("Content-Type", ct)
-	http.ServeFile(w, r, absPath)
-}
-
-func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(v)
 }
 
 // -------------------------------------------------------------------------
