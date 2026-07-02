@@ -15,8 +15,8 @@ build: build-frontend
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
 
-.PHONY: server
-server: kill-ports build
+.PHONY: prod
+prod: kill-ports build
 	./$(BINARY) serve --config=config.toml
 
 init: build kill-ports
@@ -24,10 +24,15 @@ init: build kill-ports
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
 
 # ----------
-
-frontend:
-	cd frontend && pnpm run dev
-
+.PHONY: frontend
+frontend: kill-ports
+	@echo "Starting backend with air..."
+	@air & \
+	BACKEND_PID=$$!; \
+	echo "Starting frontend dev server..."; \
+	cd frontend && pnpm run dev; \
+	echo "Stopping backend (PID: $$BACKEND_PID)..."; \
+	kill $$BACKEND_PID 2>/dev/null || true
 
 
 test:
