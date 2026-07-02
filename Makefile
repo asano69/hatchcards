@@ -12,7 +12,7 @@ build-frontend: frontend-deps
 build: build-frontend
 	go build -o $(BINARY) ./cmd/$(BINARY)
 
-
+.PHONY: kill-ports
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
 	@lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
@@ -27,15 +27,17 @@ server: kill-ports build
 # --------------
 
 # port: 3001
+.PHONY: dev-front
 dev-front:
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm dev" "air"
 
 # port: 3000
+.PHONY: dev-back
 dev-back:
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm watch" "air"
 
 
-
+.PHONY: test
 test:
 	go test ./...
 
