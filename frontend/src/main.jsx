@@ -3,12 +3,12 @@ import { Router, Route } from "@solidjs/router";
 
 // Order matters: tokens.css defines the CSS custom properties every other
 // stylesheet consumes via var().
-import "./styles/tokens.css";
-import "./styles/base.css";
-import "./styles/components.css";
-import "./styles/index.css";
-import "./styles/drill.css";
-import "./styles/done.css";
+import "./styles/style.css";
+
+
+
+
+
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github.css";
 
