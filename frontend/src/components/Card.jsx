@@ -2,6 +2,7 @@ import { createEffect } from "solid-js";
 import katex from "katex";
 import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
+import "./Card.css";
 
 // Card renders a single flashcard: deck name plus front/back content.
 // It owns rendering of that content (KaTeX math, highlight.js code blocks)
