@@ -13,13 +13,6 @@ A: ~100 trillion
 C: In the nervous system, [chemical] communication happens [between] neurons.
 ```
 
-```mermaid
-graph LR
-card --> json
-json --> html
-```
-
-
 ## Format
 
 This section describes the text format used by hashcards.
