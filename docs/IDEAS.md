@@ -39,6 +39,4 @@ or one deck at a time, and see how they render.
 
 Add random noise to review intervals, to diffuse the peaks.
 
-# Logo
 
-Make up a logo.
