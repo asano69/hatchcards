@@ -60,72 +60,11 @@
 .root {
   @apply flex h-screen w-screen flex-col;
 }
-
-.header {
-  background: var(--color-panel);
-  border-bottom: 1px solid var(--color-border);
-  @apply flex flex-row items-center justify-center p-8;
+.shutdown-container {
+  @apply mt-12 text-center;
 }
-
-.progress-bar {
-  background: var(--color-card);
-  border: 1px solid var(--color-border-soft);
-  @apply h-6 w-[300px] overflow-hidden rounded-full;
-}
-
-.progress-fill {
-  @apply h-full bg-[palegreen];
-}
-
-.controls {
-  border-top: 1px solid var(--color-border);
-  @apply p-3 md:p-8;
-}
-.controls form {
-  @apply flex flex-col md:flex-row md:justify-between;
-}
-.controls .spacer {
-  @apply flex-1;
-}
-.controls .grades {
-  @apply flex flex-row justify-between;
-}
-/* ---------- Session summary screen ---------- */
-
-.finished {
-  @apply p-6 md:p-12;
-}
-.finished h1 {
-  @apply mb-9 text-center text-4xl md:mb-12 md:text-5xl;
-}
-.finished .summary {
-  @apply mb-12 text-2xl;
-}
-.finished h2 {
-  border-bottom: 1px solid var(--color-border-soft);
-  @apply mt-4 mb-4 text-3xl md:mt-6 md:mb-6 md:text-4xl;
-}
-.finished .stats {
-  @apply text-base md:text-[22px];
-}
-.finished .stats table {
-  @apply w-full border-collapse;
-}
-.finished .stats tr {
-  border-bottom: 1px solid var(--color-border-soft);
-}
-.finished .stats td {
-  @apply py-3;
-}
-.finished .stats td.key {
-  font-family: "SF Pro", sans-serif;
-  @apply whitespace-nowrap font-medium;
-}
-.finished .stats td.val {
-  font-family: "SF Pro", sans-serif;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-  @apply w-full pl-6 md:pl-12;
+.shutdown-container form {
+  @apply inline-block;
 }
 
 /* ---------- Rendered card content ----------
@@ -248,10 +187,4 @@
   @apply p-6 text-center text-[#888] italic;
 }
 
-.shutdown-container {
-  @apply mt-12 text-center;
-}
-.shutdown-container form {
-  @apply inline-block;
-}
  * -------------------------------------------------- */

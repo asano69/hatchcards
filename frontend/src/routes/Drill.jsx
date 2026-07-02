@@ -77,22 +77,21 @@ export default function Drill() {
 // itself: the reset button, the progress bar, and the answer/grade controls.
 function DrillSession(props) {
   const card = () => props.card;
-
-  return (
+return (
     <div class="root">
-      <div class="header">
+      <div class="flex flex-row items-center justify-center p-8 bg-[var(--color-panel)] border-b border-[var(--color-border)]">
         <div class="reset-form">
           <Button title="Discard session and return home" value="Reset" onClick={props.onReset} />
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style={{ width: `${card().progressPct}%` }} />
+        <div class="h-6 w-[300px] overflow-hidden rounded-full bg-[var(--color-card)] border border-[var(--color-border-soft)]">
+          <div class="h-full bg-[palegreen]" style={{ width: `${card().progressPct}%` }} />
         </div>
       </div>
 
       <Card card={card()} />
 
-      <div class="controls">
-        <form onSubmit={(e) => e.preventDefault()}>
+      <div class="p-3 md:p-8 border-t border-[var(--color-border)]">
+        <form onSubmit={(e) => e.preventDefault()} class="flex flex-col md:flex-row md:justify-between">
           <Button
             id="undo"
             value="Undo"
@@ -101,11 +100,11 @@ function DrillSession(props) {
             onClick={() => props.onAction("Undo")}
           />
 
-          <div class="spacer" />
+          <div class="flex-1" />
 
           <Switch>
             <Match when={card().revealed}>
-              <div class="grades">
+              <div class="flex flex-row justify-between">
                 <GradeButtons card={card()} onAction={props.onAction} />
               </div>
             </Match>
@@ -119,7 +118,7 @@ function DrillSession(props) {
             </Match>
           </Switch>
 
-          <div class="spacer" />
+          <div class="flex-1" />
           <Button
             id="end"
             value="End"
@@ -130,6 +129,7 @@ function DrillSession(props) {
       </div>
     </div>
   );
+
 }
 
 function GradeButtons(props) {
