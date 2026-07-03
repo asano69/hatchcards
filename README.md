@@ -107,6 +107,17 @@ something, you can undo (shortcut: `u`). The session ends when every card has
 been graded "Good" or higher. You can end the session prematurely by clicking
 "End", this will save your changes.
 
+## Recommended Workflow
+
+1. In a Markdown editor such as Obsidian, take notes on the key points of the topic you want to learn.
+2. Ask an AI to compile the essential knowledge required to understand the subject into a list of Q: A: pairs.
+3. Copy the generated list into a `card` code block.
+4. Use a Python script or similar tool to extract the `card` code block and convert its data structure into a JSON file that can be parsed by hashcards (Go).
+5. Push the deck to a remote repository.
+6. Define workflows as needed to reorganize or rebuild the deck.
+7. Hook into the workflow completion event and redeploy the hashcards stack automatically.
+
+
 
 ## Commands
 
