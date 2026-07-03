@@ -128,7 +128,7 @@ This section documents the hashcards command line interface.
 Start a drilling session.
 
 ```bash
-$ hashcards serve --dir [DIRECTORY] --config [FILE]
+$ hashcards serve --dir [DIRECTORY]
 ```
 
 Note: your progress is not saved until the session ends, either when you run out
