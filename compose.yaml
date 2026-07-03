@@ -15,3 +15,6 @@ services:
       - FSRS_TARGET_RECALL=0.9
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
+      # 
+      - DRILL_CARD_LIMIT=0
+      - DRILL_NEW_CARD_LIMIT=0
