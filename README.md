@@ -3,7 +3,7 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
 
-**A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable web application — compiled into a single, self-contained binary.**
+**A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable, single-binary web application.**
 
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
