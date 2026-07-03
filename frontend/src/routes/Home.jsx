@@ -4,12 +4,9 @@ import pb from "../lib/pb";
 
 // Session data (including the retrievability percentage used for the
 // progress-bar background) comes entirely from GET /api/sessions.
+
 async function fetchSessions() {
-  const res = await fetch("/api/sessions");
-  if (!res.ok) {
-    throw new Error(`GET /api/sessions failed: ${res.status}`);
-  }
-  return res.json();
+  return pb.send("/api/sessions", { method: "GET" });
 }
 
 function SessionItem(props) {

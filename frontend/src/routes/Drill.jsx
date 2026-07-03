@@ -7,20 +7,15 @@ import Done from "./Done";
 import NoCards from "./NoCards";
 
 async function fetchState(deck) {
-  const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
-  return res.json();
+  return pb.send("/api/drill/state", { query: { deck } });
 }
 
 async function postAction(deck, action) {
-  const res = await fetch(
-    `/api/drill/action?deck=${encodeURIComponent(deck)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    },
-  );
-  return res.json();
+  return pb.send("/api/drill/action", {
+    method: "POST",
+    query: { deck },
+    body: { action },
+  });
 }
 
 export default function Drill() {
