@@ -1,6 +1,10 @@
 # hashcards
 
+
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
+
+**A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable web application.**
+
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 A plain text-based spaced repetition system. Features:
@@ -20,6 +24,8 @@ A plain text-based spaced repetition system. Features:
 
 > [!NOTE]
 > This project is [eudoxia0/hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
+
+
 
 
 ## Example
