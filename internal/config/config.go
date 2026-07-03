@@ -2,9 +2,6 @@
 package config
 
 import (
-	"regexp"
-	"strings"
-
 	"github.com/BurntSushi/toml"
 )
 
@@ -26,46 +23,18 @@ type FSRSSettings struct {
 	MaxInterval  float64 `toml:"max_interval"`
 }
 
-// SessionConfig defines one drill session. Deck is the deck filter;
-// Title overrides the display name shown in the index.
-type SessionConfig struct {
-	Title          string `toml:"title"`
-	Deck           string `toml:"deck"`
-	CardLimit      int    `toml:"card_limit"`
-	NewCardLimit   int    `toml:"new_card_limit"`
-	AnswerControls string `toml:"answer_controls"`
-	BurySiblings   *bool  `toml:"bury_siblings"`
-
-	// Derived fields computed during Load — not from TOML.
-	Name     string
-	Path     string
-	FromDeck string
-}
-
 // Config is the top-level structure parsed from the TOML file.
+//
+// Drill sessions are no longer configured here: "serve" derives one session
+// per deck (plus a combined "All Decks" session) directly from the decks
+// found under Data.Root. See internal/cmd/serve.
 type Config struct {
-	Server   ServerConfig    `toml:"server"`
-	Data     DataConfig      `toml:"data"`
-	FSRS     FSRSSettings    `toml:"fsrs"`
-	Sessions []SessionConfig `toml:"session"`
+	Server ServerConfig `toml:"server"`
+	Data   DataConfig   `toml:"data"`
+	FSRS   FSRSSettings `toml:"fsrs"`
 }
 
-// nonAlphanumRe matches runs of characters that are not lowercase letters or digits.
-var nonAlphanumRe = regexp.MustCompile(`[^a-z0-9]+`)
-
-// deckToPath converts a deck name to a clean URL path segment.
-// Empty string maps to "" (the root drill route /drill/).
-func deckToPath(deck string) string {
-	if deck == "" {
-		return ""
-	}
-	s := strings.ToLower(deck)
-	s = nonAlphanumRe.ReplaceAllString(s, "-")
-	return strings.Trim(s, "-")
-}
-
-// Load reads and parses the TOML config file at path, applying defaults and
-// deriving computed fields from each session's Deck and Title values.
+// Load reads and parses the TOML config file at path, applying defaults.
 func Load(path string) (*Config, error) {
 	var cfg Config
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
@@ -94,28 +63,6 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.FSRS.MaxInterval == 0 {
 		cfg.FSRS.MaxInterval = 256.0
-	}
-
-	// Derive Name, Path, and FromDeck from each session's fields.
-	for i := range cfg.Sessions {
-		s := &cfg.Sessions[i]
-		s.Path = deckToPath(s.Deck)
-		s.FromDeck = s.Deck
-		switch {
-		case s.Title != "":
-			s.Name = s.Title
-		case s.Deck != "":
-			s.Name = s.Deck
-		default:
-			s.Name = "All Decks"
-		}
-		if s.AnswerControls == "" {
-			s.AnswerControls = "full"
-		}
-		if s.BurySiblings == nil {
-			t := true
-			s.BurySiblings = &t
-		}
 	}
 
 	return &cfg, nil

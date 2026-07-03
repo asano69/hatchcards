@@ -11,30 +11,15 @@ target_recall = 0.9
 min_interval = 1.0
 max_interval = 256.0
 
-# Each [[session]] defines one drill route.
-# title  — display name shown on the index page (defaults to deck name or "All Decks")
-# deck   — filter by deck name; omit or leave empty to drill all decks
-#
+
+# Drill sessions are no longer configured here. "serve" automatically
+# creates one session per deck found under [data].root (the filename of
+# each *.json deck file, minus the extension, becomes both the deck name
+# and the session), plus a combined "All Decks" session.
+
+
 # Other optional fields:
 #   card_limit      = 0      # max cards per session, 0 = no limit
 #   new_card_limit  = 0      # max new cards per session, 0 = no limit
 #   answer_controls = "full" # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
 #   bury_siblings   = true   # bury sibling cloze cards within a session
-
-[[session]]
-title = "All"
-
-[[session]]
-title = "Mathematics"
-deck = "Math"
-
-[[session]]
-#title = "Chemical"
-deck = "Chemistry"
-
-[[session]]
-#title = "Chemical"
-deck = "Language"
-
-[[session]]
-deck = "Markdown"

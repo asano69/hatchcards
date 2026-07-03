@@ -8,6 +8,9 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
+	"strings"
 
 	"github.com/asano69/hashcards/internal/assets"
 	"github.com/asano69/hashcards/internal/cmd/drill/handlers"
@@ -34,6 +37,49 @@ type sessionInfo struct {
 	RetriPct float64 `json:"retri_pct"`
 }
 
+// deckSession describes one drill route derived from the collection: either
+// the combined "All Decks" session (Deck == "") or a single deck's session.
+type deckSession struct {
+	Name string
+	Path string
+	Deck string
+}
+
+// nonAlphanumRe matches runs of characters that are not lowercase letters or digits.
+var nonAlphanumRe = regexp.MustCompile(`[^a-z0-9]+`)
+
+// deckToPath converts a deck name to a clean URL path segment.
+// Empty string maps to "" (the root drill route /drill/).
+func deckToPath(deck string) string {
+	if deck == "" {
+		return ""
+	}
+	s := strings.ToLower(deck)
+	s = nonAlphanumRe.ReplaceAllString(s, "-")
+	return strings.Trim(s, "-")
+}
+
+// deckSessions returns one session for "All Decks" plus one session per
+// distinct deck name found in the collection (i.e. one per deck JSON file),
+// sorted by deck name for a stable, deterministic order.
+func deckSessions(col *collection.Collection) []deckSession {
+	names := make(map[string]struct{})
+	for _, c := range col.Cards {
+		names[c.DeckName()] = struct{}{}
+	}
+	sorted := make([]string, 0, len(names))
+	for n := range names {
+		sorted = append(sorted, n)
+	}
+	sort.Strings(sorted)
+
+	sessions := []deckSession{{Name: "All Decks", Path: "", Deck: ""}}
+	for _, name := range sorted {
+		sessions = append(sessions, deckSession{Name: name, Path: deckToPath(name), Deck: name})
+	}
+	return sessions
+}
+
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
 func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
@@ -52,29 +98,22 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 		MaxInterval:  cfg.FSRS.MaxInterval,
 	}
 
+	// Sessions are no longer hand-configured: one is created per deck found
+	// in the collection, plus a combined "All Decks" session. All auto
+	// sessions share the same defaults (no card limits, full answer
+	// controls, sibling burial on).
 	manager := handlers.NewManager()
-	for _, sc := range cfg.Sessions {
-		var cardLimit, newCardLimit *int
-		if sc.CardLimit > 0 {
-			cl := sc.CardLimit
-			cardLimit = &cl
-		}
-		if sc.NewCardLimit > 0 {
-			ncl := sc.NewCardLimit
-			newCardLimit = &ncl
-		}
+	for _, ds := range deckSessions(col) {
 		var deckFilter *string
-		if sc.FromDeck != "" {
-			df := sc.FromDeck
+		if ds.Deck != "" {
+			df := ds.Deck
 			deckFilter = &df
 		}
-		burySiblings := sc.BurySiblings == nil || *sc.BurySiblings
-
 		if err := manager.AddSession(
-			sc.Path, col, database, sc.AnswerControls,
-			cardLimit, newCardLimit, deckFilter, burySiblings, fsrsCfg,
+			ds.Path, col, database, "full",
+			nil, nil, deckFilter, true, fsrsCfg,
 		); err != nil {
-			return fmt.Errorf("setup session %q: %w", sc.Name, err)
+			return fmt.Errorf("setup session %q: %w", ds.Name, err)
 		}
 	}
 
@@ -95,7 +134,7 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 			if err != nil {
 				freshCol = col
 			}
-			return re.JSON(http.StatusOK, buildSessionList(cfg, freshCol, database))
+			return re.JSON(http.StatusOK, buildSessionList(freshCol, database))
 		})
 
 		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
@@ -171,20 +210,21 @@ func computeAvgRetrieval(col *collection.Collection, database *db.Database, deck
 	return total / float64(len(cards)) * 100
 }
 
-// buildSessionList converts config sessions to the JSON-serialisable form,
-// computing average retrievability for each session's deck.
-func buildSessionList(cfg *config.Config, col *collection.Collection, database *db.Database) []sessionInfo {
-	list := make([]sessionInfo, 0, len(cfg.Sessions))
-	for _, sc := range cfg.Sessions {
+// buildSessionList converts the collection's decks to the JSON-serialisable
+// form, computing average retrievability for each session's deck.
+func buildSessionList(col *collection.Collection, database *db.Database) []sessionInfo {
+	decks := deckSessions(col)
+	list := make([]sessionInfo, 0, len(decks))
+	for _, ds := range decks {
 		drillURL := "/drill"
-		if sc.Path != "" {
-			drillURL = "/drill?deck=" + url.QueryEscape(sc.Path)
+		if ds.Path != "" {
+			drillURL = "/drill?deck=" + url.QueryEscape(ds.Path)
 		}
 		list = append(list, sessionInfo{
-			Name:     sc.Name,
-			Path:     sc.Path,
+			Name:     ds.Name,
+			Path:     ds.Path,
 			DrillURL: drillURL,
-			RetriPct: computeAvgRetrieval(col, database, sc.FromDeck),
+			RetriPct: computeAvgRetrieval(col, database, ds.Deck),
 		})
 	}
 	return list
