@@ -6,8 +6,9 @@
  * variable names, so components can keep referencing var(--color-*)
  * once instead of pairing every utility with a dark: variant. */
 @theme {
-  --font-serif:
-    "TeX Gyre Termes", "Nimbus Roman No9 L", "Times New Roman", "Times", serif;
+  --font-sans: system-ui, "Inter", -apple-system, sans-serif;
+  --font-serif: "TeX Gyre Termes", "Nimbus Roman No9 L", Georgia, serif;
+  --font-mono: "Menlo", "Consolas", "Monaco", "Courier New", monospace;
 
   --color-bg: #ffffff;
   --color-text: #000000;
