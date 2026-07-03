@@ -31,6 +31,9 @@ Differences from the Original:
 - **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule.
 
+Key points of focus: 
+
+- By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
 
 ## Example
 
