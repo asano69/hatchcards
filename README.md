@@ -22,11 +22,6 @@ A plain text-based spaced repetition system. Features:
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
 
-> [!NOTE]
-> This project is [eudoxia0/hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
-
-
-
 
 ## Example
 
