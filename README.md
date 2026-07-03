@@ -7,7 +7,7 @@
 
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
-A plain text-based spaced repetition system. Features:
+Features:
 
 - **Plain Text:** all your flashcards are stored as plain text files, so you can
   operate on them with standard tools, write with your editor of choice, and
@@ -21,6 +21,15 @@ A plain text-based spaced repetition system. Features:
   implemented using a Makefile and some scripts.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
+
+
+Differences from the Original:
+
+- **SPA (Single Page Application)**: Flashcards are meant to be displayed randomly, which pairs much better with an SPA than with SSR (Server-Side Rendering). Additionally, an SPA is ideal for this project due to its lightning-fast page transitions.
+- **PocketBase**: It allows you to directly check the state of cards currently being studied without having to run SQL commands. It also integrates seamlessly with an SPA architecture where the backend and frontend are decoupled.
+- **SolidJS**: Solid.js was chosen to easily handle complex UI layouts.
+- **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
+- **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule.
 
 
 ## Example
@@ -216,24 +225,6 @@ The `reviews` table has the following schema:
 
 Note: "timestamp format" is `YYYY-MM-DDTHH:MM:SS.MMM`, e.g. `2025-10-04T17:09:51.517`.
 
-## オリジナルとの違い
-SPA
-- フラッシュカードはランダムに表示されることに意味があるので、SSRよりもSPAのほうが相性がよい。また画面遷移が高速なSPAのほうがよい。
-
-PocketBase
-- 学習中のカードの状態をSQLコマンドを使うことなく直接見ることができる。
-- バックエンドとフロントエンドを分けてSPAにする場合に相性がよい。
-
-Solid.js
-- 複雑な画面レイアウトにも対応できるようにSolid.jsをつかう。とくに使わない理由はない。
-
-json中間ファイル
-- 元の実装のマークダウンパーサは、pythonスクリプトに移しmd→Json→htmlと、いう変換を重ねることにした。
-- これにより、さまざまな場所に分散したノートをスクリプトによって集約しやすくなる。
-
-可視性
-- カードの詳細な状態を表示
-- 学習スケジュールの可視化
 
 ## Prior Art
 
@@ -251,14 +242,14 @@ json中間ファイル
 [rustup]: https://rustup.rs/
 
 ## License
-© 2026- by asano69. Licensed under the Apache 2.0 license.
-© 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.
+© 2026- by asano69. Licensed under the Apache 2.0 license.  
+© 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.  
 
 ---
 
 
 
 
-To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
+To learn how to write good flashcards, read [Effective Spaced Repetition][esr].  
 => https://gutenberg.org/cache/epub/47748/pg47748-images.html  
-=> https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up
+=> https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up  
