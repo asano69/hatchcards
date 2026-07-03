@@ -1,6 +1,7 @@
 import { createResource, createSignal, For, Show } from "solid-js";
 import { A } from "@solidjs/router";
 import pb from "../lib/pb";
+import Admin from "./Admin.jsx";
 
 // Session data (including the retrievability percentage used for the
 // progress-bar background) comes entirely from GET /api/sessions.
@@ -54,12 +55,15 @@ export default function Home() {
         <h1 class="font-serif text-4xl">Hashcards</h1>
         <button
           type="button"
-          class="cursor-pointer rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] px-3 py-[7px] text-sm font-semibold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-40"
+          class="btn"
           disabled={refreshing()}
           onClick={handleRefresh}
         >
           {refreshing() ? "Refreshing…" : "Refresh"}
         </button>
+        <A href="/admin" class="btn">Admin</A>
+
+
       </div>
       {/* Nothing is shown while the initial request is in flight, matching
           the previous vanilla-JS behaviour. */}
