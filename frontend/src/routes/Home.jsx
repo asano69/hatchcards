@@ -12,14 +12,23 @@ async function fetchSessions() {
 }
 
 function SessionItem(props) {
+  const pct = props.session.retri_pct.toFixed(1);
   return (
     <li>
       <A
         href={props.session.drill_url}
-        class="session-link"
-        style={{ "--retri-pct": `${props.session.retri_pct.toFixed(1)}%` }}
+        class="relative flex items-center justify-between overflow-hidden rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] px-5 py-4 text-lg font-semibold text-[var(--color-text)] shadow-[0_1px_3px_0_var(--color-shadow)] transition-colors hover:bg-[var(--color-hover-bg)] hover:border-[var(--color-hover-border)]"
       >
-        {props.session.name}
+        {/* Retrievability fill, drawn behind the text as a simple overlay. */}
+        <div
+          class="absolute inset-y-0 left-0"
+          style={{
+            width: `${pct}%`,
+            background: "var(--color-progress)",
+          }}
+        />
+        <span class="relative">{props.session.name}</span>
+        <span class="relative text-sm font-normal opacity-60">{pct}%</span>
       </A>
     </li>
   );
@@ -29,23 +38,21 @@ export default function Home() {
   const [sessions] = createResource(fetchSessions);
 
   return (
-    <div class="index-wrap">
-      <h1>Hashcards</h1>
+    <div class="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center bg-[var(--color-bg)] px-6 py-12 text-[var(--color-text)]">
+      <h1 class="mb-10 font-serif text-4xl">Hashcards</h1>
       {/* Nothing is shown while the initial request is in flight, matching
           the previous vanilla-JS behaviour. */}
       <Show when={!sessions.loading}>
         <Show
           when={!sessions.error}
-          fallback={<p class="index-message">Failed to load sessions.</p>}
+          fallback={<p class="text-[var(--color-border-soft)]">Failed to load sessions.</p>}
         >
           <Show
             when={sessions().length > 0}
-            fallback={<p class="index-message">No sessions configured.</p>}
+            fallback={<p class="text-[var(--color-border-soft)]">No sessions configured.</p>}
           >
-            <ul class="session-list">
-              <For each={sessions()}>
-                {(s) => <SessionItem session={s} />}
-              </For>
+            <ul class="flex w-full flex-col gap-3">
+              <For each={sessions()}>{(s) => <SessionItem session={s} />}</For>
             </ul>
           </Show>
         </Show>

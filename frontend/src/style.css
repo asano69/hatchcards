@@ -22,6 +22,8 @@
   --color-active-bg: #e4e4e4;
   --color-active-border: #666666;
   --color-shadow: #cccccc;
+  /* ---custom ---*/
+  --color-progress: palegreen;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -39,6 +41,8 @@
     --color-active-bg: #444444;
     --color-active-border: #777777;
     --color-shadow: #111111;
+    /* ---custom ---*/
+    --color-progress: palegreen;
   }
 }
 

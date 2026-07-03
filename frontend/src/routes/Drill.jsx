@@ -84,7 +84,7 @@ return (
           <Button title="Discard session and return home" value="Reset" onClick={props.onReset} />
         </div>
         <div class="h-6 w-[300px] overflow-hidden rounded-full bg-[var(--color-card)] border border-[var(--color-border-soft)]">
-          <div class="h-full bg-[palegreen]" style={{ width: `${card().progressPct}%` }} />
+          <div class="h-full bg-[var(--color-progress)]" style={{ width: `${card().progressPct}%` }} />
         </div>
       </div>
 
