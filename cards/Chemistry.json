@@ -1,6 +1,6 @@
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "$\\ce{2 KClO3 -> 2 KCl + 3 O2}$",
     "answer": "Oxygen"
   }

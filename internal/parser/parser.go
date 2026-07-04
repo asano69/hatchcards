@@ -7,14 +7,14 @@
 //
 // Two card types are supported:
 //
-// Basic card — "type": "Q", with "question" and "answer" fields:
+// Basic card — "kind": "basic", with "question" and "answer" fields:
 //
-//	{"type": "Q", "question": "What is the capital of France?", "answer": "Paris."}
+//	{"kind": "basic", "question": "What is the capital of France?", "answer": "Paris."}
 //
-// Cloze card — "type": "C", with a "text" field containing one or more
+// Cloze card — "kind": "cloze", with a "text" field containing one or more
 // [deletion] spans:
 //
-//	{"type": "C", "text": "The capital of [France] is [Paris]."}
+//	{"kind": "cloze", "text": "The capital of [France] is [Paris]."}
 //
 // "question", "answer", and "text" hold Markdown source. Newlines and other
 // special characters are represented using standard JSON string escapes
@@ -35,10 +35,10 @@ import (
 // jsonCard is the on-disk representation of a single entry in a deck's
 // JSON array.
 type jsonCard struct {
-	Type     string `json:"type"`
-	Question string `json:"question,omitempty"`
-	Answer   string `json:"answer,omitempty"`
-	Text     string `json:"text,omitempty"`
+	Kind     types.CardType `json:"kind"`
+	Question string         `json:"question,omitempty"`
+	Answer   string         `json:"answer,omitempty"`
+	Text     string         `json:"text,omitempty"`
 }
 
 // ParseFile reads the JSON deck file at path and returns all cards it
@@ -64,18 +64,18 @@ func ParseFile(path string) ([]types.Card, error) {
 		// It stands in for a line number in error messages and card
 		// ordering, since JSON entries don't map 1:1 to source lines.
 		entryNo := i + 1
-		switch entry.Type {
-		case "Q":
+		switch entry.Kind {
+		case types.CardTypeBasic:
 			content := types.NewBasicContent(entry.Question, entry.Answer)
 			cards = append(cards, types.NewCard(deckName, path, entryNo, entryNo, content))
-		case "C":
+		case types.CardTypeCloze:
 			cleanText, spans := extractClozeSpans(entry.Text)
 			for _, sp := range spans {
 				content := types.NewClozeContent(cleanText, sp.start, sp.end)
 				cards = append(cards, types.NewCard(deckName, path, entryNo, entryNo, content))
 			}
 		default:
-			return nil, errs.Newf("%s: entry %d: unknown card type %q", path, entryNo, entry.Type)
+			return nil, errs.Newf("%s: entry %d: unknown card kind %q", path, entryNo, entry.Kind)
 		}
 	}
 

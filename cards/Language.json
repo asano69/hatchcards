@@ -1,11 +1,11 @@
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "谢谢",
     "answer": "ありがとう"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "Ευχαριστώ",
     "answer": "ありがとう"
   }

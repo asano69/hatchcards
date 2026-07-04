@@ -40,7 +40,7 @@ def parse_text_to_json(text_data):
         # --- C:（コンセプト） ---
         if block.startswith("C:"):
             content = block[2:].strip()
-            result.append({"type": "C", "text": content})
+            result.append({"kind": "cloze", "text": content})
 
         # --- Q:（質問） ---
         elif block.startswith("Q:"):
@@ -50,7 +50,7 @@ def parse_text_to_json(text_data):
         elif block.startswith("A:"):
             answer = block[2:].strip()
             if current_q:
-                result.append({"type": "Q", "question": current_q, "answer": answer})
+                result.append({"kind": "basic", "question": current_q, "answer": answer})
                 current_q = None
 
     return result

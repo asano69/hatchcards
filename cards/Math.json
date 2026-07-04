@@ -1,16 +1,16 @@
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "What does $\\euler$ evaluate to?",
     "answer": "$0$"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "State the first DeMorgan Law",
     "answer": "$$\n\\neg \\left( P \\land Q \\right) \\equiv \\neg P \\lor \\neg Q\n$$"
   },
   {
-    "type": "C",
+    "kind": "cloze",
     "text": "Tables are also supported:\n\n| $A$ | $B$ | $A \\lor B$ |\n| --- | --- | ---------- |\n| F   | F   | [F]        | \n| F   | T   | [T]        | \n| T   | F   | [T]        | \n| T   | T   | [T]        |"
   }
 ]

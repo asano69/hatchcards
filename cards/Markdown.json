@@ -1,26 +1,26 @@
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "ざっと読むだけでも知っておくと役立つ情報を書きたいときは？",
     "answer": "`>[!NOTE]` を行頭に使います。"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "より良く、より簡単に進めるためのヒントを書きたいときは？",
     "answer": "`>[!TIP]` を行頭に使います。"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "目的を達成するために必ず知っておくべき重要な情報を書きたいときは？",
     "answer": "`>[!IMPORTANT]` を行頭に使います。"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "問題を避けるために直ちに注意が必要な重要事項を書きたいときは？",
     "answer": "`>[!WARNING]` を行頭に使います。"
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "特定の操作によるリスクや望ましくない結果について注意を促したいときは？",
     "answer": "`>[!CAUTION]` を行頭に使います。"
   }

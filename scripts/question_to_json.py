@@ -169,7 +169,7 @@ def parse_question_text(text_data, context):
             content = block[2:].strip()
             if not content:
                 warnings.append(f"{context}: empty 'C:' entry (entry {pos})")
-            entries.append({"type": "C", "text": content})
+            entries.append({"kind": "cloze", "text": content})
 
         elif block.startswith("Q:"):
             if current_q is not None:
@@ -188,7 +188,7 @@ def parse_question_text(text_data, context):
                 )
                 continue
             answer = block[2:].strip()
-            entries.append({"type": "Q", "question": current_q, "answer": answer})
+            entries.append({"kind": "basic", "question": current_q, "answer": answer})
             current_q = None
             current_q_pos = None
 

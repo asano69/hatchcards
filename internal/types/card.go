@@ -7,11 +7,11 @@ import (
 )
 
 // CardType indicates whether a card is basic (Q&A) or cloze deletion.
-type CardType int
+type CardType string
 
 const (
-	CardTypeBasic CardType = iota
-	CardTypeCloze
+	CardTypeBasic CardType = "basic"
+	CardTypeCloze CardType = "cloze"
 )
 
 // CardContent holds the actual content of a card.

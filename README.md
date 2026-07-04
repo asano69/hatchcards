@@ -42,21 +42,21 @@ The following JSON file is a valid hashcards deck:
 ```json
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "How many neurons are there in the human brain?",
     "answer": "~80 billion."
   },
   {
-    "type": "C",
+    "kind": "cloze",
     "text": "An [agonist] is a ligand that binds to a receptor and [activates it]."
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "How many synapses are there in a human brain?",
     "answer": "~100 trillion"
   },
   {
-    "type": "C",
+    "kind": "cloze",
     "text": "In the nervous system, [chemical] communication happens [between] neurons."
   }
 ]
@@ -72,12 +72,12 @@ $ cd cards
 $ cat > Geography.json << 'EOF'
 [
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "What is Coulomb's constant?",
     "answer": "The proportionality constant of the electric force."
   },
   {
-    "type": "Q",
+    "kind": "basic",
     "question": "What is an object with zero net charge called?",
     "answer": "Neutral."
   }
