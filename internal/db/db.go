@@ -491,3 +491,43 @@ func (db *Database) SyncFileCache(cardHash types.CardHash, deckName string, body
 	}
 	return nil
 }
+
+// PruneFileCache deletes any "files" record whose linked card is not present
+// in currentHashes, keeping the file cache in exact sync with the current
+// on-disk deck state. Unlike cards/reviews (which are intentionally kept as
+// orphans until "orphans delete" is run explicitly), the file cache carries
+// no history worth preserving, so it can be pruned automatically on every scan.
+func (db *Database) PruneFileCache(currentHashes map[types.CardHash]struct{}) error {
+	cardRecords, err := db.app.FindAllRecords("cards")
+	if err != nil {
+		return errs.Newf("prune file cache: query cards: %v", err)
+	}
+	// cardHashByID maps a "cards" record ID to its hash, so each "files"
+	// record can be checked in O(1) instead of one lookup query per record.
+	cardHashByID := make(map[string]types.CardHash, len(cardRecords))
+	for _, r := range cardRecords {
+		h, err := types.ParseCardHash(r.GetString("card_hash"))
+		if err != nil {
+			return err
+		}
+		cardHashByID[r.Id] = h
+	}
+
+	fileRecords, err := db.app.FindAllRecords("files")
+	if err != nil {
+		return errs.Newf("prune file cache: query files: %v", err)
+	}
+	for _, r := range fileRecords {
+		if hash, ok := cardHashByID[r.GetString("relation")]; ok {
+			if _, stillOnDisk := currentHashes[hash]; stillOnDisk {
+				continue // still current, keep it
+			}
+		}
+		// Either the linked card record no longer exists, or the card it
+		// points to is no longer on disk: this cache entry is stale.
+		if err := db.app.Delete(r); err != nil {
+			return errs.Newf("prune file cache: delete stale record: %v", err)
+		}
+	}
+	return nil
+}

@@ -154,6 +154,7 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 		e.Router.GET("/api/sessions", func(re *core.RequestEvent) error {
 			freshCol, err := collection.Load(cfg.Data.Root, database)
 			if err != nil {
+				logrus.WithError(err).Warn("collection load failed, using stale collection")
 				freshCol = col
 			}
 			return re.JSON(http.StatusOK, buildSessionList(freshCol, database))

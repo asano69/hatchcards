@@ -200,7 +200,9 @@ func buildCardBody(c types.Card) cardBody {
 // change even when the card itself hasn't.
 func syncDB(cards []types.Card, database *db.Database) error {
 	now := types.Now()
+	currentHashes := make(map[types.CardHash]struct{}, len(cards))
 	for _, card := range cards {
+		currentHashes[card.Hash()] = struct{}{}
 		if err := database.InsertCard(card.Hash(), now); err != nil && !errors.Is(err, db.ErrDuplicateCard) {
 			return err
 		}
@@ -208,5 +210,5 @@ func syncDB(cards []types.Card, database *db.Database) error {
 			return err
 		}
 	}
-	return nil
+	return database.PruneFileCache(currentHashes)
 }
