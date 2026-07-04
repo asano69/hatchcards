@@ -43,6 +43,11 @@ dev-back: clean kill-ports
 test:
 	go test ./...
 
+
+migrate-collections:
+	go run ./cmd/hashcards migrate collections
+
+
 .PHONY: card
 card:
 	python3 ./scripts/question_to_json.py ~/Documents/obsidian/computer cards
