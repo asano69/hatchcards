@@ -17,6 +17,8 @@ See:
 - 未来の、確定された期限
 - “Statistics - Anki Manual”. docs.ankiweb.net, [https://docs.ankiweb.net/stats.html](https://docs.ankiweb.net/stats.html), (Accessed 2026-07-04)
 
+![](https://docs.ankiweb.net/media/Statistics.png)
+
 ## Term-Definition Cards
 
 A shorthand. Writing:
