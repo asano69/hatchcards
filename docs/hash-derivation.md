@@ -50,9 +50,27 @@ i _ a m _ f i n e
 1文字しか隠されているところがなければ、start == endになる。
 
 ```
-Y = Z
+Y = X
 1 2 3
 - - *
+```
+
+```python
+import blake3
+import struct
+text = "i am fine"
+start = 5
+end = 8
+# Concatenate "Cloze" + text + start(8-byte little-endian uint64) + end(8-byte little-endian uint64)
+data = b"Cloze" + text.encode("utf-8") + struct.pack("<Q", start) + struct.pack("<Q", end)
+h = blake3.blake3(data).hexdigest()
+print(h)
+```
+
+start, endは、符号なし8バイトになる。
+```
+start = 5 → \x05\x00\x00\x00\x00\x00\x00\x00  (8バイト)
+end   = 8 → \x08\x00\x00\x00\x00\x00\x00\x00  (8バイト)
 ```
 
 ### family_hash
