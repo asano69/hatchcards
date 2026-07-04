@@ -16,8 +16,6 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-
-	_ "github.com/asano69/hashcards/internal/migrations"
 )
 
 type ReviewRecord struct {
