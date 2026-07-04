@@ -56,6 +56,7 @@ Y = X
 ```
 
 ```python
+#!/usr/bin/env python3
 import blake3
 import struct
 text = "i am fine"
