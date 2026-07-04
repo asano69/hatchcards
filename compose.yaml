@@ -18,3 +18,5 @@ services:
       # 
       - DRILL_CARD_LIMIT=0
       - DRILL_NEW_CARD_LIMIT=0
+      - DRILL_ANSWER_CONTROLS=full # or binary
+      - DRILL_BURY_SIBLINGS=true
