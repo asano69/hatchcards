@@ -7,6 +7,8 @@ services:
     volumes:
       - ./cards:/hashcards/cards
       - ./pb_data:/hashcards/data
+    # env_file:
+    #  - hashcards.env
     environment:
       - TZ=Asia/Tokyo
       - SERVER_HOST=0.0.0.0
