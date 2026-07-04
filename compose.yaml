@@ -10,7 +10,7 @@ services:
     # env_file:
     #  - hashcards.env
     environment:
-      - TZ=Europe/London
+      - TZ=Asia/Tokyo
       #
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
