@@ -23,6 +23,38 @@ h.Update([]byte(c.Answer))
 
 ## Cloze
 
+### start, end
+
+startとendは、internal/parser/parser.goのextractClozeSpansが生のテキストを1バイトずつ走査しながら、「ブラケットを取り除いた後のclean text」における位置として記録しているものです。
+
+#### `i am [fine]`の場合
+
+```
+clean_text: 'i am fine'
+deleted:    'fine'
+start = 5, end = 8
+family_hash: 03270ccdd681303d9cf59f87d2cc455c55f3c8897090a0806e833a6c5b2d5ab1
+card_hash:   3f74a8d76e50c2f144b670573e4f9cfeca20837c30f3451ec531e69ff420d8fb
+```
+
+`clean_text = "i am fine"` の中で `"fine"`は4バイト
+
+```
+i _ a m _ f i n e
+0 1 2 3 4 5 6 7 8
+- - - - - * - - *
+```
+
+#### `Y=[X]`の場合
+
+1文字しか隠されているところがなければ、start == endになる。
+
+```
+Y = Z
+1 2 3
+- - *
+```
+
 ### family_hash
 
 - `family_hash`はデータベースには保存されず、**使う場所でその都度メモリ上で再計算**されるだけの値です。
