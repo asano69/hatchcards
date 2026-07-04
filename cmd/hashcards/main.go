@@ -15,6 +15,8 @@ import (
 	"github.com/asano69/hashcards/internal/cmd/serve"
 	"github.com/asano69/hashcards/internal/cmd/stats"
 	"github.com/asano69/hashcards/internal/config"
+
+	_ "github.com/asano69/hashcards/migrations"
 )
 
 func main() {
