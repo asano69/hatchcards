@@ -15,6 +15,7 @@ See:
 - 過去から現在のデッキごとの安定性のグラフ
 - 現在の、カードステータス（期限切れ、新規カード、期日カード）
 - 未来の、確定された期限
+- “Statistics - Anki Manual”. docs.ankiweb.net, [https://docs.ankiweb.net/stats.html](https://docs.ankiweb.net/stats.html), (Accessed 2026-07-04)
 
 ## Term-Definition Cards
 
