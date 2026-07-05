@@ -7,7 +7,7 @@ COPY frontend .
 RUN pnpm run build
 
 # Stage 1
-FROM golang:1.26.1-alpine AS go-builder
+FROM golang:1.26-alpine AS go-builder
 WORKDIR /build
 COPY go.mod go.sum* ./
 RUN go mod download || true
@@ -15,7 +15,7 @@ RUN go mod download || true
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 
-COPY --from=node-builder /internal/assets/dist ./internal/assets/dist
+COPY --from=node-builder /build/internal/assets/dist ./internal/assets/dist
 
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hashcards ./cmd/hashcards
