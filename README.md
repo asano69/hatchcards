@@ -267,7 +267,9 @@ The `reviews` table has the following schema:
 | `interval_days` | ~~`real`~~ **`numeric not null default 0`** | The interval as an integer number of days, after rounding and clamping. ~~`null`~~ **`0`** if the card is new. |
 | `due_date` | ~~`text not null`~~ **`text not null default ''`** | The date, in the user's local time, when the card is next due, in `YYYY-MM-DD` format. |
 
-Note: "timestamp format" is `YYYY-MM-DDTHH:MM:SS.MMM`, e.g. `2025-10-04T17:09:51.517`.
+>[!NOTE]
+>- "timestamp format" is `YYYY-MM-DDTHH:MM:SS.MMM`, e.g. `2025-10-04T17:09:51.517`.
+
 
 
 ## Prior Art
