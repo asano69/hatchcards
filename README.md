@@ -226,9 +226,7 @@ These can be set directly, via `.envrc`/`direnv`, or (as in `hashacrds.env` and 
 
 ## Database
 
-hashcards stores card performance data and the review history in an SQLite3
-database. The file is called `hashcards.db` and is found in the root of the card
-directory (i.e., the path you pass to the `drill` command).
+hashcards stores card performance data and review history in the SQLite3 database managed by PocketBase.
 
 The `cards` table has the following schema:
 
