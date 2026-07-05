@@ -35,6 +35,10 @@ Key points of focus:
 
 - **Streamlining flashcard creation**: By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
 
+## Screenshot
+
+![](.github/assets/sample-01.png)
+
 ## Example
 
 The following JSON file is a valid hashcards deck:
