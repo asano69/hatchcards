@@ -25,6 +25,7 @@
   --color-shadow: #cccccc;
   /* ---custom ---*/
   --color-progress: palegreen;
+  --color-muted: #e5e5e5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,6 +45,7 @@
     --color-shadow: #111111;
     /* ---custom ---*/
     --color-progress: #2a6e2a;
+    --color-muted: #202020;
   }
 }
 

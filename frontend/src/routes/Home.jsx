@@ -43,11 +43,16 @@ function SessionItem(props) {
       : props.status.byDeck.get(props.session.name);
   const pct = () => reviewedPct(stat()).toFixed(1);
 
+  // Nothing to review: no new cards and nothing due today.
+  const isEmpty = () =>
+    (stat()?.new_count ?? 0) === 0 && (stat()?.due_count ?? 0) === 0;
+
   return (
     <li>
       <A
         href={props.session.drill_url}
-        class="relative flex items-center justify-between overflow-hidden rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] px-5 py-4 text-lg font-semibold text-[var(--color-text)] shadow-[0_1px_3px_0_var(--color-shadow)] transition-colors hover:bg-[var(--color-hover-bg)] hover:border-[var(--color-hover-border)]"
+        class="relative flex items-center justify-between overflow-hidden rounded-md border border-[var(--color-border-soft)] px-5 py-4 text-lg font-semibold text-[var(--color-text)] shadow-[0_1px_3px_0_var(--color-shadow)] transition-colors hover:bg-[var(--color-hover-bg)] hover:border-[var(--color-hover-border)]"
+        style={{ background: isEmpty() ? "var(--color-muted)" : "var(--color-field)" }}
       >
         {/* Reviewed-today fill, drawn behind the text. New/due cards are
             left uncolored — only the reviewed share is highlighted. */}
@@ -57,8 +62,7 @@ function SessionItem(props) {
         />
         <span class="relative">{props.session.name}</span>
         <span class="relative flex gap-2 text-sm font-mono tabular-nums">
-        <span className="text-gray-500">{Math.round(stat()?.new_count ?? 0)}</span>
-        <span className="text-red-500">{Math.round(stat()?.due_count ?? 0)}</span>
+        <span className="text-gray-500">{Math.round((stat()?.new_count ?? 0) + (stat()?.due_count ?? 0))}</span>
         <span className="text-green-500">{Math.round(stat()?.reviewed_today_count ?? 0)}</span>
         </span>
       </A>
