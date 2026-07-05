@@ -32,7 +32,7 @@ function readThemeColors() {
   return {
     text: get("--color-text", "#000000"),
     border: get("--color-border-soft", "#999999"),
-    bar: get("--color-progress", "palegreen"),
+    bar: "gray",
   };
 }
 
@@ -40,7 +40,7 @@ function buildSpec(series, colors) {
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width: "container",
-    height: 300,
+    height: 400,
     // Transparent background so the chart blends into the page instead of
     // showing Vega's default white canvas in dark mode.
     background: "transparent",
@@ -50,16 +50,36 @@ function buildSpec(series, colors) {
         titleColor: colors.text,
         domainColor: colors.border,
         tickColor: colors.border,
-        gridColor: colors.border,
-        gridOpacity: 0.2,
+    
+ 
+        labelFontSize: 25,
+        titleFontSize: 30,
+        grid: false,
       },
       view: { stroke: "transparent" },
     },
     data: { values: series },
     mark: { type: "bar", color: colors.bar },
     encoding: {
-      x: { field: "day", type: "ordinal", title: "Days from today" },
-      y: { field: "count", type: "quantitative", title: "Cards due", axis: { format: "d" } },
+      x: {
+        field: "day",
+        type: "ordinal",
+        title: "Days from today",
+        // Show a tick only every 5 days, instead of one per day.
+        axis: {
+          // Rotate labels 90 degrees so they stand upright instead of
+          // running horizontally.
+          labelAngle: 0,
+          values: series.map((d) => d.day),
+          labelExpr: "datum.value % 5 === 0 ? datum.value : ''",
+        },
+      },
+      y: {
+        field: "count",
+        type: "quantitative",
+        title: "Cards due",
+        axis: { format: "d" },
+      },
       tooltip: [
         { field: "day", title: "Day" },
         { field: "count", title: "Cards due" },
@@ -67,6 +87,7 @@ function buildSpec(series, colors) {
     },
   };
 }
+
 
 export default function Stats() {
   let container;
