@@ -55,10 +55,10 @@ function SessionItem(props) {
           style={{ width: `${pct()}%`, background: "var(--color-progress)" }}
         />
         <span class="relative">{props.session.name}</span>
-        <span class="relative flex gap-3 text-sm font-normal opacity-70 tabular-nums">
-        <span className="font-mono font-bold">{Math.round(stat()?.new_count ?? 0)}</span>
-        <span className="text-red-600 font-mono font-bold">{Math.round(stat()?.due_count ?? 0)}</span>
-        <span className="text-green-600 font-mono font-bold">{Math.round(stat()?.reviewed_today_count ?? 0)}</span>
+        <span class="relative flex gap-2 text-sm font-mono tabular-nums">
+        <span className="text-gray-500">{Math.round(stat()?.new_count ?? 0)}</span>
+        <span className="text-red-500">{Math.round(stat()?.due_count ?? 0)}</span>
+        <span className="text-green-500">{Math.round(stat()?.reviewed_today_count ?? 0)}</span>
         </span>
       </A>
     </li>
