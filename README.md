@@ -147,8 +147,9 @@ Start a drilling session.
 $ hashcards serve --dir [DIRECTORY]
 ```
 
-Note: your progress is not saved until the session ends, either when you run out
-of cards, or when you click "End".
+>[!NOTE]
+>- Note: your progress is not saved until the session ends, either when you run out of cards, or when you click "End".
+>- Settings such as the card location can be changed using environment variables.
 
 
 ### `stats`
@@ -207,7 +208,7 @@ $ hashcards orphans list Cards
 
 Example:
 
-```bash
+```sh
 SERVER_HOST=0.0.0.0
 SERVER_PORT=3000
 DATA_ROOT=./cards
