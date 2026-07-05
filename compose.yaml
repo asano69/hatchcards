@@ -1,6 +1,7 @@
 services:
   hashcards:
-    build: .
+    # build: .
+    image: ghcr.io/asano69/hashcards:0.1.0-beta.2
     restart: unless-stopped
     ports:
       - "3000:3000"
