@@ -1,9 +1,13 @@
 # Stage 0: Node (vendor frontend assets via npm)
 FROM node:22-alpine AS node-builder
+
+
 WORKDIR /build
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN mkdir -p /build/internal/assets
+COPY frontend/ ./
+
+WORKDIR /build/frontend
 RUN corepack enable && pnpm install
-COPY frontend/ .
 RUN pnpm run build
 
 # Stage 1
