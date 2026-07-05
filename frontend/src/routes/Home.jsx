@@ -93,7 +93,8 @@ export default function Home() {
         >
           {refreshing() ? "Refreshing…" : "Refresh"}
         </button>
-        <A href="/stats" class="btn">Stats</A>
+        <a href="/stats" class="btn">Stats</a>
+            <a href="/admin" class="btn">Admin</a>
       </div>
       <Show when={!data.loading}>
         <Show

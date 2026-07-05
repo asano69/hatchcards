@@ -10,6 +10,9 @@ import "highlight.js/styles/github.css";
 import Home from "./routes/Home";
 import Drill from "./routes/Drill";
 import Stats from "./routes/Stats";
+import Admin from "./routes/Admin";
+
+
 
 render(
   () => (
@@ -17,6 +20,8 @@ render(
       <Route path="/" component={Home} />
       <Route path="/drill" component={Drill} />
       <Route path="/stats" component={Stats} />
+      <Route path="/admin" component={Admin} />
+
     </Router>
   ),
   document.getElementById("app"),
