@@ -65,6 +65,7 @@ The following JSON file is a valid hashcards deck:
   }
 ]
 ```
+Please use the script of your choice to convert your flashcards into this format. A sample Python script is provided in the scripts directory.
 
 ## Tutorial
 
