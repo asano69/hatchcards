@@ -64,6 +64,9 @@ The following JSON file is a valid hashcards deck:
 
 ## Tutorial
 
+>[!CAUTION]
+>The original hashcards DB and the Go port version should be compatible, but they haven't been tested at all, so please make sure to back up your database.
+
 Create a directory for your flashcards, and add a JOSN file with some cards:
 
 ```bash
