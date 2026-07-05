@@ -1,5 +1,6 @@
-import { createResource, createSignal, For, Show } from "solid-js";
+import { createResource, For, Show } from "solid-js";
 import { A } from "@solidjs/router";
+import NavBar from "../components/NavBar";
 import pb from "../lib/pb";
 
 async function fetchSessions() {
@@ -67,35 +68,10 @@ function SessionItem(props) {
 
 export default function Home() {
   const [data, { refetch }] = createResource(loadHomeData);
-  const [refreshing, setRefreshing] = createSignal(false);
-
-  // Ask the server to rescan the deck directory for decks added since
-  // startup, then reload sessions + today's stats to reflect any changes.
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await pb.send("/api/rescan", { method: "POST" });
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   return (
     <div class="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center bg-[var(--color-bg)] px-6 py-12 text-[var(--color-text)]">
-      <div class="mb-10 flex w-full items-center justify-between">
-        <h1 class="font-serif text-4xl">Hashcards</h1>
-        <button
-          type="button"
-          class="btn"
-          disabled={refreshing()}
-          onClick={handleRefresh}
-        >
-          {refreshing() ? "Refreshing…" : "Refresh"}
-        </button>
-        <a href="/stats" class="btn">Stats</a>
-            <a href="/admin" class="btn">Admin</a>
-      </div>
+      <NavBar onRefresh={refetch} />
       <Show when={!data.loading}>
         <Show
           when={!data.error}

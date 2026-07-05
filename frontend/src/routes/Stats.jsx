@@ -1,5 +1,6 @@
 import { onMount, onCleanup, createSignal, Show } from "solid-js";
 import embed from "vega-embed";
+import NavBar from "../components/NavBar";
 import pb from "../lib/pb";
 
 const FORECAST_DAYS = 30;
@@ -69,29 +70,37 @@ function buildSpec(series, colors) {
 export default function Stats() {
   let container;
   let view;
+  let series = [];
   const [error, setError] = createSignal(null);
 
-  const render = async (series) => {
+  // Re-renders the chart from whatever data is currently in `series`,
+  // using the current theme colors. Does not fetch new data.
+  const renderChart = async () => {
     view?.finalize();
     const result = await embed(container, buildSpec(series, readThemeColors()), { actions: false });
     view = result.view;
   };
 
-  onMount(async () => {
-    let series;
+  // Fetches the latest forecast data and re-renders the chart. Used both
+  // on initial mount and when the user clicks Refresh in the nav bar.
+  const load = async () => {
     try {
-      const records = await fetchFutureDue();
-      series = buildDailySeries(records);
+      series = buildDailySeries(await fetchFutureDue());
+      setError(null);
     } catch (e) {
       setError(e);
       return;
     }
-    await render(series);
+    await renderChart();
+  };
 
-    // Re-render on OS theme change so the chart colors stay in sync with
-    // the page's own dark/light mode.
+  onMount(() => {
+    load();
+
+    // Re-render (not re-fetch) on OS theme change so the chart colors stay
+    // in sync with the page's own dark/light mode.
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => render(series);
+    const onChange = () => renderChart();
     media.addEventListener("change", onChange);
     onCleanup(() => media.removeEventListener("change", onChange));
   });
@@ -100,6 +109,7 @@ export default function Stats() {
 
   return (
     <div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 bg-[var(--color-bg)] px-6 py-12 text-[var(--color-text)]">
+      <NavBar onRefresh={load} />
       <h1 class="font-serif text-4xl">Review Forecast</h1>
       <Show when={error()}>
         <p class="text-[var(--color-border-soft)]">Failed to load forecast.</p>
