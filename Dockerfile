@@ -5,6 +5,7 @@ FROM node:22-alpine AS node-builder
 WORKDIR /build
 RUN mkdir -p /build/internal/assets
 COPY frontend/ ./frontend/
+COPY migrations/ ./migrations/
 
 WORKDIR /build/frontend
 RUN corepack enable && pnpm install
