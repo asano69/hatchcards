@@ -10,6 +10,7 @@ hashcards is a plain-text spaced repetition system written in Go. It parses JSON
 
 # Rules
 
+- データベースのマイグレーションはフロントエンドから行うのでマイグレーションコードを作成する必要はまったくない。
 - When fixing bugs, add a failing regression test first.
 - All errors are user-facing, so messages should be clear.
 - Keep functions small and focused.
