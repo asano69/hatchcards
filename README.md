@@ -106,9 +106,7 @@ $ cat > example-notebook-1970-01.json << 'EOF'
 EOF
 ```
 
-A JSON file is called a "deck", and the name of the file, sans extension, is
-the name of the deck. This will be shown on top of the flashcard during reviews,
-this saves you from having to specify the context in each of the flashcards.
+The name of the JSON file can be anything you like, but it is generally easier to manage if you create a separate file for each resource in the Markdown notebook from which the Q&A flashcards are generated. Note that the value of the DeckName key in the JSON object is used as the playlist name displayed when reviewing the flashcards.
 
 Start drilling:
 
