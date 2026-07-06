@@ -6,12 +6,12 @@
 package serve
 
 import (
-	"net/http"
-
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
+	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 type connectionRequest struct {
@@ -39,6 +39,9 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 		}
 		record, err := database.CreateConnection(toConnectionInput(body))
 		if err != nil {
+			// Log the real cause server-side; the client only sees a generic
+			// message so secrets or internal details never leak in the response.
+			logrus.WithError(err).Warn("create connection failed")
 			return e.BadRequestError("create connection failed", err)
 		}
 		return e.JSON(http.StatusOK, record)
@@ -51,6 +54,7 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 		}
 		record, err := database.UpdateConnection(e.Request.PathValue("id"), toConnectionInput(body))
 		if err != nil {
+			logrus.WithError(err).Warn("update connection failed")
 			return e.BadRequestError("update connection failed", err)
 		}
 		return e.JSON(http.StatusOK, record)
