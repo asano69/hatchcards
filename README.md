@@ -88,7 +88,7 @@ Create a directory for your flashcards, and add a JOSN file with some cards:
 ```bash
 $ mkdir -p cards
 $ cd cards
-$ cat > 1970-01-01-example.json << 'EOF'
+$ cat > example-notebook-1970-01.json << 'EOF'
 [
   {
     "deckName": "Geography",
