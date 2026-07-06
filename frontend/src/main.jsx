@@ -13,6 +13,7 @@ import Drill from "./routes/Drill";
 import Stats from "./routes/Stats";
 import Admin from "./routes/Admin";
 import Login from "./routes/Login";
+import Connections from "./routes/Connections";
 import pb from "./lib/pb";
 
 // AuthGate blocks the whole app behind Login until a valid superuser
@@ -38,6 +39,7 @@ render(
         <Route path="/drill" component={Drill} />
         <Route path="/stats" component={Stats} />
         <Route path="/admin" component={Admin} />
+        <Route path="/connections" component={Connections} />
       </Router>
     </AuthGate>
   ),

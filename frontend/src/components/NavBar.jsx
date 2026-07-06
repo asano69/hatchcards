@@ -37,6 +37,7 @@ export default function NavBar(props) {
         </button>
         <A href="/stats" class="btn">Stats</A>
         <A href="/admin" class="btn">Admin</A>
+        <A href="/connections" class="btn">Connections</A>
         <button type="button" class="btn" onClick={handleLogout}>Log out</button>
       </nav>
     </div>
