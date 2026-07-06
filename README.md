@@ -3,6 +3,9 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
 
+>[!WARNING]
+>This app is still under development.
+
 **A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable, single-binary web application.**
 
 
