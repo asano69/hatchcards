@@ -47,6 +47,11 @@ COPY --from=go-builder /build/hashcards /usr/local/bin/hashcards
 
 RUN mkdir -p /hashcards/data
 RUN mkdir -p /hashcards/cards
+# Default location for pre-installed post-sync hook scripts (see
+# internal/hook and HOOKS_DIR below). Left empty if no hooks are mounted;
+# a missing/empty hooks directory is not an error, it just means no hooks
+# are available.
+RUN mkdir -p /hashcards/hooks
 
 RUN chown -R 1000:1000 /hashcards
 USER 1000:1000

@@ -6,6 +6,7 @@ import (
 
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/errs"
+	"github.com/asano69/hashcards/internal/hook"
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/asano69/hashcards/internal/types"
@@ -42,11 +43,22 @@ type ConnectionInput struct {
 	Username  string
 	Token     string
 	Enabled   bool
+	// HookName is the name of a pre-installed post-sync script (see
+	// internal/hook), or "" if this connection has no hook. It is
+	// validated against hooksDir before being persisted, so a connection
+	// can never reference a hook that doesn't exist or isn't executable.
+	HookName string
 }
 
 // CreateConnection encrypts the token and inserts a new "connections" record.
-// local_path is derived from the connection name at creation time.
-func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
+// local_path is derived from the connection name at creation time. hooksDir
+// is the operator-configured directory of runnable hook scripts; in.HookName
+// is validated against it before the record is saved.
+func (db *Database) CreateConnection(hooksDir string, in ConnectionInput) (*core.Record, error) {
+	if _, err := hook.Resolve(hooksDir, in.HookName); err != nil {
+		return nil, errs.Newf("invalid hook: %v", err)
+	}
+
 	collection, err := db.app.FindCollectionByNameOrId("connections")
 	if err != nil {
 		return nil, errs.Newf("find connections collection: %v", err)
@@ -63,6 +75,7 @@ func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
 	record.Set("token_ciphertext", ciphertext)
 	record.Set("local_path", SanitizeConnectionName(in.Name))
 	record.Set("enabled", in.Enabled)
+	record.Set("hook_name", in.HookName)
 	if err := db.app.Save(record); err != nil {
 		return nil, errs.Newf("save connection: %v", err)
 	}
@@ -71,13 +84,18 @@ func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
 
 // UpdateConnection updates a "connections" record by id. The token is only
 // re-encrypted when in.Token is non-empty, so editing other fields doesn't
-// require re-entering the secret.
+// require re-entering the secret. hooksDir is used the same way as in
+// CreateConnection, to validate in.HookName before saving.
 //
 // local_path is intentionally left untouched here, even if Name changes:
 // it was fixed at creation time. Recomputing it on every rename would
 // silently orphan the existing local clone (the mirror data would still be
 // on disk under the old directory name, but no longer be found).
-func (db *Database) UpdateConnection(id string, in ConnectionInput) (*core.Record, error) {
+func (db *Database) UpdateConnection(hooksDir, id string, in ConnectionInput) (*core.Record, error) {
+	if _, err := hook.Resolve(hooksDir, in.HookName); err != nil {
+		return nil, errs.Newf("invalid hook: %v", err)
+	}
+
 	record, err := db.app.FindRecordById("connections", id)
 	if err != nil {
 		return nil, errs.Newf("find connection: %v", err)
@@ -87,6 +105,7 @@ func (db *Database) UpdateConnection(id string, in ConnectionInput) (*core.Recor
 	record.Set("remote_url", in.RemoteURL)
 	record.Set("username", in.Username)
 	record.Set("enabled", in.Enabled)
+	record.Set("hook_name", in.HookName)
 
 	if in.Token != "" {
 		ciphertext, err := cryptoutil.Encrypt([]byte(in.Token))
@@ -145,6 +164,9 @@ type MirrorableConnection struct {
 	RemoteURL string
 	Username  string
 	LocalPath string
+	// HookName is the post-sync hook to run after a successful mirror
+	// sync, or "" if none is configured (see internal/hook).
+	HookName string
 }
 
 // GetMirrorConnection returns the plain fields needed to mirror the
@@ -160,6 +182,7 @@ func (db *Database) GetMirrorConnection(id string) (MirrorableConnection, error)
 		RemoteURL: record.GetString("remote_url"),
 		Username:  record.GetString("username"),
 		LocalPath: record.GetString("local_path"),
+		HookName:  record.GetString("hook_name"),
 	}, nil
 }
 
@@ -178,6 +201,7 @@ func (db *Database) ListEnabledConnections() ([]MirrorableConnection, error) {
 			RemoteURL: r.GetString("remote_url"),
 			Username:  r.GetString("username"),
 			LocalPath: r.GetString("local_path"),
+			HookName:  r.GetString("hook_name"),
 		})
 	}
 	return out, nil

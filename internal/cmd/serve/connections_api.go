@@ -24,23 +24,30 @@ type connectionRequest struct {
 	Username  string `json:"username"`
 	Token     string `json:"token"`
 	Enabled   bool   `json:"enabled"`
+	// HookName is the name of a pre-installed post-sync hook script, or ""
+	// for none. It is validated against hooksDir in db.CreateConnection /
+	// db.UpdateConnection before being persisted.
+	HookName string `json:"hook_name"`
 }
 
 func toConnectionInput(b connectionRequest) db.ConnectionInput {
 	return db.ConnectionInput{
 		Name: b.Name, RemoteURL: b.RemoteURL, Username: b.Username,
-		Token: b.Token, Enabled: b.Enabled,
+		Token: b.Token, Enabled: b.Enabled, HookName: b.HookName,
 	}
 }
 
 // RegisterConnectionsAPI wires up the two encryption-sensitive endpoints.
-func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.Database) {
+// hooksDir is forwarded to db.CreateConnection / db.UpdateConnection so a
+// connection's hook_name is validated against the operator-configured hooks
+// directory before it is saved.
+func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.Database, hooksDir string) {
 	r.POST("/api/connections", func(e *core.RequestEvent) error {
 		var body connectionRequest
 		if err := e.BindBody(&body); err != nil {
 			return e.BadRequestError("invalid request body", err)
 		}
-		record, err := database.CreateConnection(toConnectionInput(body))
+		record, err := database.CreateConnection(hooksDir, toConnectionInput(body))
 		if err != nil {
 			logrus.WithError(err).Warn("create connection failed")
 			return e.BadRequestError("create connection failed", err)
@@ -53,7 +60,7 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 		if err := e.BindBody(&body); err != nil {
 			return e.BadRequestError("invalid request body", err)
 		}
-		record, err := database.UpdateConnection(e.Request.PathValue("id"), toConnectionInput(body))
+		record, err := database.UpdateConnection(hooksDir, e.Request.PathValue("id"), toConnectionInput(body))
 		if err != nil {
 			logrus.WithError(err).Warn("update connection failed")
 			return e.BadRequestError("update connection failed", err)

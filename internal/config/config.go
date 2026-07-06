@@ -18,6 +18,13 @@ type ServerConfig struct {
 // DataConfig holds data storage settings.
 type DataConfig struct {
 	Root string
+	// HooksDir is the directory of pre-installed post-sync hook scripts
+	// (see internal/hook). It is read-only from the app's point of view;
+	// an operator places executable scripts there ahead of time. A missing
+	// directory is not an error: it simply means no hooks are available,
+	// which is also the behavior of every installation predating this
+	// feature.
+	HooksDir string
 }
 
 // FSRSSettings holds FSRS scheduling tuning parameters.
@@ -46,6 +53,7 @@ type Config struct {
 //	SERVER_HOST         default "0.0.0.0"
 //	SERVER_PORT         default 3000
 //	DATA_ROOT           default "."
+//	HOOKS_DIR           default "./hooks"
 //	FSRS_TARGET_RECALL  default 0.9
 //	FSRS_MIN_INTERVAL   default 1.0
 //	FSRS_MAX_INTERVAL   default 256.0
@@ -56,7 +64,8 @@ func Load() (*Config, error) {
 			Port: 3000,
 		},
 		Data: DataConfig{
-			Root: envString("DATA_ROOT", "."),
+			Root:     envString("DATA_ROOT", "."),
+			HooksDir: envString("HOOKS_DIR", "./hooks"),
 		},
 		FSRS: FSRSSettings{
 			TargetRecall: 0.9,
