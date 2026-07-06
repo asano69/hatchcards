@@ -9,10 +9,12 @@ import (
 
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/db"
+	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/mirror"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
+	"github.com/sirupsen/logrus"
 )
 
 // RegisterMirrorAPI registers the endpoint that manually triggers a mirror
