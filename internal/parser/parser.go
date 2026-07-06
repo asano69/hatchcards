@@ -2,19 +2,20 @@
 //
 // # Deck file format
 //
-// A deck file is a JSON array of card entries. The deck name is always
-// derived from the filename without its extension.
+// A deck file is a JSON array of card entries. Each entry must set its own
+// "deckName" field. The filename itself is arbitrary and carries no
+// meaning — a single file may freely mix cards belonging to different decks.
 //
 // Two card types are supported:
 //
 // Basic card — "kind": "basic", with "question" and "answer" fields:
 //
-//	{"kind": "basic", "question": "What is the capital of France?", "answer": "Paris."}
+//	{"kind": "basic", "question": "What is the capital of France?", "answer": "Paris.", "deckName": "Geography"}
 //
 // Cloze card — "kind": "cloze", with a "text" field containing one or more
 // [deletion] spans:
 //
-//	{"kind": "cloze", "text": "The capital of [France] is [Paris]."}
+//	{"kind": "cloze", "text": "The capital of [France] is [Paris].", "deckName": "Geography"}
 //
 // "question", "answer", and "text" hold Markdown source. Newlines and other
 // special characters are represented using standard JSON string escapes
@@ -25,7 +26,6 @@ package parser
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/asano69/hashcards/internal/errs"
@@ -35,6 +35,7 @@ import (
 // jsonCard is the on-disk representation of a single entry in a deck's
 // JSON array.
 type jsonCard struct {
+	DeckName string         `json:"deckName"`
 	Kind     types.CardType `json:"kind"`
 	Question string         `json:"question,omitempty"`
 	Answer   string         `json:"answer,omitempty"`
@@ -42,8 +43,8 @@ type jsonCard struct {
 }
 
 // ParseFile reads the JSON deck file at path and returns all cards it
-// contains. The deck name is derived from the filename without its
-// extension.
+// contains. Each entry's deck name comes from its own required "deck_name"
+// field; the filename plays no role in naming.
 func ParseFile(path string) ([]types.Card, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -55,30 +56,31 @@ func ParseFile(path string) ([]types.Card, error) {
 		return nil, errs.Newf("parse deck file %s: %v", path, err)
 	}
 
-	base := filepath.Base(path)
-	deckName := strings.TrimSuffix(base, filepath.Ext(base))
-
 	var cards []types.Card
 	for i, entry := range entries {
 		// entryNo is the 1-based position of this entry in the JSON array.
 		// It stands in for a line number in error messages and card
 		// ordering, since JSON entries don't map 1:1 to source lines.
 		entryNo := i + 1
+
+		if entry.DeckName == "" {
+			return nil, errs.Newf("%s: entry %d: missing required field \"deckName\"", path, entryNo)
+		}
+
 		switch entry.Kind {
 		case types.CardTypeBasic:
 			content := types.NewBasicContent(entry.Question, entry.Answer)
-			cards = append(cards, types.NewCard(deckName, path, entryNo, entryNo, content))
+			cards = append(cards, types.NewCard(entry.DeckName, path, entryNo, entryNo, content))
 		case types.CardTypeCloze:
 			cleanText, spans := extractClozeSpans(entry.Text)
 			for _, sp := range spans {
 				content := types.NewClozeContent(cleanText, sp.start, sp.end)
-				cards = append(cards, types.NewCard(deckName, path, entryNo, entryNo, content))
+				cards = append(cards, types.NewCard(entry.DeckName, path, entryNo, entryNo, content))
 			}
 		default:
 			return nil, errs.Newf("%s: entry %d: unknown card kind %q", path, entryNo, entry.Kind)
 		}
 	}
-
 	// Deduplicate cards by hash within this file.
 	seen := make(map[types.CardHash]struct{}, len(cards))
 	unique := cards[:0]
