@@ -8,6 +8,7 @@ services:
     volumes:
       - ./cards:/hashcards/cards
       - ./data:/hashcards/pb_data
+      #- /run/secrets:/secrets
     # env_file:
     #  - hashcards.env
     environment:
@@ -20,6 +21,7 @@ services:
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
       # Not implemented yet
+      #- DATA_CREDENTIALS=/secrets
       #- DRILL_CARD_LIMIT=0 # max cards per session, 0 = no limit
       #- DRILL_NEW_CARD_LIMIT=0 # max new cards per session, 0 = no limit
       #- DRILL_ANSWER_CONTROLS=full # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
