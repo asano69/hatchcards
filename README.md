@@ -37,6 +37,7 @@ Differences from the Original:
 Key Design Considerations: 
 
 - **Streamlining flashcard creation**: By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
+- **Context Preservation Principle**: A flashcard should always be stored together with the context from which it was derived.
 
 ## Screenshot
 
