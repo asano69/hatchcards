@@ -106,7 +106,7 @@ $ cat > example-notebook-1970-01.json << 'EOF'
 EOF
 ```
 
-The name of the JSON file can be anything you like, but it is generally easier to manage if you create a separate file for each resource in the Markdown notebook from which the Q&A flashcards are generated. Note that the value of the DeckName key in the JSON object is used as the playlist name displayed when reviewing the flashcards.
+The name of the JSON file can be anything you like, but it is generally easier to manage if you create a separate file for each resource in the Markdown notebook from which the Q&A flashcards are generated. Note that the value of the `deckName` key in the JSON object is used as the playlist name displayed when reviewing the flashcards.
 
 Start drilling:
 
