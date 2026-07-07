@@ -11,7 +11,7 @@ services:
       - ./data:/hashcards/pb_data
       - ./cards:/hashcards/cards # optional
       - ./hooks:/hashcards/hooks # optional
-      #- /root/nixos/modules/ca/root_ca.crt:/certs/root_ca.crt:ro # optional
+      #- /etc/ssl/certs/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
       - TZ=Europe/London
       #
