@@ -441,6 +441,8 @@ type cardStateJSON struct {
 	ProgressPct    int               `json:"progressPct"`
 	AnswerControls string            `json:"answerControls"`
 	Macros         map[string]string `json:"macros"`
+	// LastReviewedAt is the previous review timestamp, or "" for a new card.
+	LastReviewedAt string `json:"lastReviewedAt"`
 }
 
 type doneStateJSON struct {
@@ -475,6 +477,13 @@ func (h *handler) stateResponse() stateResponse {
 		// serving a broken response.
 		return stateResponse{Status: "no_cards"}
 	}
+
+	// New cards have no prior review, so LastReviewedAt stays empty.
+	var lastReviewedAt string
+	if rp := dc.Performance.Reviewed(); rp != nil {
+		lastReviewedAt = rp.LastReviewedAt.String()
+	}
+
 	total := h.sess.Total()
 	done := h.sess.ReviewedCount()
 	percent := 0
@@ -494,6 +503,7 @@ func (h *handler) stateResponse() stateResponse {
 			ProgressPct:    percent,
 			AnswerControls: h.answerControls,
 			Macros:         macrosMap(h.macros),
+			LastReviewedAt: lastReviewedAt,
 		},
 	}
 }

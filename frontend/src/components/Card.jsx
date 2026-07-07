@@ -26,6 +26,11 @@ export default function Card(props) {
           class="card-content flex flex-1 flex-col overflow-x-hidden"
           innerHTML={card().revealed ? card().back : card().front}
         />
+         <Show when={card().revealed && card().lastReviewedAt}>
+          <div class="px-6 pb-4 text-sm text-[var(--color-border-soft)] text-right">
+            Last reviewed: {card().lastReviewedAt.replace("T", " ").slice(0, 16)}
+          </div>
+        </Show>
       </div>
     </div>
   );
