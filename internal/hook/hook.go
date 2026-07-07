@@ -97,8 +97,8 @@ func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) (string, 
 
 	cmd := exec.CommandContext(ctx, scriptPath, absSource, absOutput)
 	cmd.Env = append(os.Environ(),
-		"HASHCARDS_SOURCE_DIR="+absSource,
-		"HASHCARDS_OUTPUT_DIR="+absOutput,
+		"HATCHCARDS_SOURCE_DIR="+absSource,
+		"HATCHCARDS_OUTPUT_DIR="+absOutput,
 	)
 
 	out, err := cmd.CombinedOutput()

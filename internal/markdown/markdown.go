@@ -61,7 +61,7 @@ var inlineMathRe = regexp.MustCompile(`\$([^$\n]+?)\$`)
 // then replaced with the actual HTML span after rendering. This matches the
 // Rust implementation's approach and ensures the placeholder is treated as
 // plain text by the markdown renderer (e.g. inside backtick code spans).
-const clozePlaceholder = "XHASHCARDSCLOZEX"
+const clozePlaceholder = "XHATCHCARDSCLOZEX"
 
 // HTMLFront returns the HTML for the front face of a card.
 // deckFilePath is the absolute path of the deck file the card came from.

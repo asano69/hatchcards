@@ -34,7 +34,7 @@ local_path (作業ツリー。Markdownソースが入っている)
      │ hookが設定されていれば実行
      ▼
 hook script (運用者が事前配置した実行ファイル1本、read-onlyディレクトリ内)
-     │ $HASHCARDS_SOURCE_DIR を読み、$HASHCARDS_OUTPUT_DIR にJSONを書く
+     │ $HATCHCARDS_SOURCE_DIR を読み、$HATCHCARDS_OUTPUT_DIR にJSONを書く
      ▼
 DATA_ROOT/.generated/<local_path>/*.json
      │ walkDecks が再帰的に拾う（collection.go、無変更）
@@ -141,8 +141,8 @@ func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) error {
 	cmd := exec.CommandContext(ctx, scriptPath)
 	cmd.Dir = sourceDir
 	cmd.Env = append(os.Environ(),
-		"HASHCARDS_SOURCE_DIR="+sourceDir,
-		"HASHCARDS_OUTPUT_DIR="+outputDir,
+		"HATCHCARDS_SOURCE_DIR="+sourceDir,
+		"HATCHCARDS_OUTPUT_DIR="+outputDir,
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

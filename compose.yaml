@@ -15,7 +15,7 @@ services:
     environment:
       - TZ=Europe/London
       #
-      - HASHCARDS_MASTER_KEY=${HASHCARDS_MASTER_KEY}
+      - HATCHCARDS_MASTER_KEY=${HATCHCARDS_MASTER_KEY}
       #
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
@@ -24,7 +24,7 @@ services:
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
       #
-      - HASHCARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
+      - HATCHCARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
       # Not implemented yet
       #- DRILL_CARD_LIMIT=0 # max cards per session, 0 = no limit
       #- DRILL_NEW_CARD_LIMIT=0 # max new cards per session, 0 = no limit
