@@ -6,10 +6,6 @@ package serve
 
 import (
 	"context"
-	"net/http"
-	"path/filepath"
-	"time"
-
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/hook"
@@ -18,6 +14,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 // hookTimeout bounds how long a single post-sync hook script may run, so a
@@ -145,11 +145,24 @@ func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sour
 
 	ctx, cancel := context.WithTimeout(context.Background(), hookTimeout)
 	defer cancel()
+	out, err := hook.Run(ctx, scriptPath, sourceDir, outputDir)
 
-	if _, err := hook.Run(ctx, scriptPath, sourceDir, outputDir); err != nil {
+	logOutput := func(entry *logrus.Entry, out string) {
+		out = strings.TrimRight(out, "\n")
+		if out == "" {
+			return
+		}
+		for _, line := range strings.Split(out, "\n") {
+			entry.Info(line)
+		}
+	}
+
+	if err != nil {
 		log.WithError(err).Warn("post-sync hook: failed")
+		logOutput(log, out)
 		return err
 	}
 	log.Info("post-sync hook: succeeded")
+	logOutput(log, out)
 	return nil
 }
