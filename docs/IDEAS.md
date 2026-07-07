@@ -45,8 +45,5 @@ and hope you see it first. Instead, there should be a `preview` command that
 opens a web interface that lets you navigate the flashcards, either all of them,
 or one deck at a time, and see how they render.
 
-## Jitter
-
-Add random noise to review intervals, to diffuse the peaks.
 
 
