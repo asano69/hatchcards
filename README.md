@@ -14,9 +14,7 @@ Features:
 
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
-- **Simple**:
-    - A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
-    - By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
+- **Simple**: A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
