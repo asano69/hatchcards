@@ -35,6 +35,13 @@ Tech Stack
 - [PocketBase](https://github.com/pocketbase/pocketbase)
 - [Vega-Lite](https://github.com/vega/vega-lite)
 
+
+## Recommended Workflow
+1. In a Markdown editor such as Obsidian, take notes on what you have understood about topics that interest you.
+2. In question sections (e.g. `## Question::DeckName {{Q&A}} ---`), write the information you want to memorize as a list of Q&A pairs.
+3. Push the Markdown notebooks to a remote repository.
+4. If the repository mirroring settings are configured correctly, flashcards will be generated automatically.
+
 ## Screenshot
 
 <img src=".github/assets/sample-01.png" width="300" /><img src=".github/assets/sample-02.png" width="300" />
@@ -126,11 +133,7 @@ something, you can undo (shortcut: `u`). The session ends when every card has
 been graded "Good" or higher. You can end the session prematurely by clicking
 "End", this will save your changes.
 
-## Recommended Workflow
-1. In a Markdown editor such as Obsidian, take notes on what you have understood about topics that interest you.
-2. In question sections (e.g. `## Question::DeckName {{Q&A}} ---`), write the information you want to memorize as a list of Q&A pairs.
-3. Push the Markdown notebooks to a remote repository.
-4. If the repository mirroring settings are configured correctly, flashcards will be generated automatically.
+
 
 ## Commands
 
