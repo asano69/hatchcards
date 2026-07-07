@@ -25,11 +25,11 @@ import (
 const hookTimeout = 5 * time.Minute
 
 // RegisterMirrorAPI registers the endpoint that manually triggers a mirror
-// sync for one connection. dataRoot is used to resolve a connection's
-// local_path when it isn't already an absolute path, and (together with
-// local_path) to derive the output directory for any post-sync hook.
-// hooksDir is the operator-configured directory of runnable hook scripts
-// (see internal/hook).
+// sync for one connection. dataRoot is used to derive a connection's mirror
+// directory (dataRoot/<name> or dataRoot/.mirror/<name>, see mirrorRoot),
+// and (together with the connection name) to derive the output directory
+// for any post-sync hook. hooksDir is the operator-configured directory of
+// runnable hook scripts (see internal/hook).
 func RegisterMirrorAPI(r *router.Router[*core.RequestEvent], database *db.Database, dataRoot, hooksDir string) {
 	r.POST("/api/connections/{id}/mirror", func(e *core.RequestEvent) error {
 		id := e.Request.PathValue("id")
@@ -43,8 +43,8 @@ func RegisterMirrorAPI(r *router.Router[*core.RequestEvent], database *db.Databa
 	}).Bind(apis.RequireSuperuserAuth())
 }
 
-// mirrorRoot returns the directory a connection's local_path is resolved
-// against for cloning/pulling.
+// mirrorRoot returns the directory a connection's sanitized name is
+// resolved against for cloning/pulling.
 //
 // Connections without a hook mirror directly into dataRoot (e.g.
 // cards/<name>), matching the pre-hook behavior exactly.
@@ -65,10 +65,10 @@ func mirrorRoot(dataRoot string, mc db.MirrorableConnection) string {
 // one Sync call, zeroing it immediately afterwards regardless of outcome,
 // then persists the result (success or error) back onto the record.
 //
-// local_path always comes from mc.LocalPath, which db.CreateConnection sets
-// to db.SanitizeConnectionName(name) at creation time — it is never
-// user-supplied and never recomputed later. Where it resolves to on disk
-// depends on whether a hook is configured; see mirrorRoot.
+// The mirror directory is always computed from mc.Name via
+// db.SanitizeConnectionName — it is never user-supplied and never read from
+// storage. Which root it resolves under depends on whether a hook is
+// configured; see mirrorRoot.
 //
 // If the connection has a hook_name, it runs once the sync succeeds,
 // reading from the freshly-synced working tree (dataRoot/.mirror/<name>)
@@ -88,10 +88,7 @@ func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error 
 	}
 	defer cryptoutil.Zero(token)
 
-	localPath := mc.LocalPath
-	if !filepath.IsAbs(localPath) {
-		localPath = filepath.Join(mirrorRoot(dataRoot, mc), localPath)
-	}
+	localPath := filepath.Join(mirrorRoot(dataRoot, mc), db.SanitizeConnectionName(mc.Name))
 
 	logrus.WithFields(logrus.Fields{
 		"connection":       mc.Name,
@@ -121,20 +118,17 @@ func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error 
 }
 
 // runPostSyncHook resolves and runs the connection's configured hook
-// script, writing its output to dataRoot/<local_path> — the connection's
-// normal deck directory — rather than into the git working tree itself
-// (which now lives under dataRoot/.mirror/<local_path>). This also means a
-// generated file can never collide with an untracked path on the next pull,
-// since the two directories are entirely separate trees.
+// script, writing its output to dataRoot/<sanitized name> — the
+// connection's normal deck directory — rather than into the git working
+// tree itself (which lives under dataRoot/.mirror/<sanitized name>). This
+// also means a generated file can never collide with an untracked path on
+// the next pull, since the two directories are entirely separate trees.
 func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sourceDir string) error {
 	scriptPath, err := hook.Resolve(hooksDir, mc.HookName)
 	if err != nil {
 		return err
 	}
-	outputDir := mc.LocalPath
-	if !filepath.IsAbs(outputDir) {
-		outputDir = filepath.Join(dataRoot, outputDir)
-	}
+	outputDir := filepath.Join(dataRoot, db.SanitizeConnectionName(mc.Name))
 
 	log := logrus.WithFields(logrus.Fields{
 		"connection": mc.Name,

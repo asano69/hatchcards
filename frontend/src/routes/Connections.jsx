@@ -71,7 +71,7 @@ export default function Connections() {
               <div>
                 <div class="font-semibold">{c.name}</div>
                 <div class="text-sm text-[var(--color-border-soft)]">{c.remote_url}</div>
-                <div class="text-sm text-[var(--color-border-soft)]">local: {c.local_path}</div>
+            
                 <Show when={c.hook_name}>
                   <div class="text-sm text-[var(--color-border-soft)]">hook: {c.hook_name}</div>
                 </Show>

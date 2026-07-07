@@ -18,11 +18,11 @@ import (
 var unsafePathCharsRe = regexp.MustCompile(`[\\/:*?"<>|]+`)
 
 // SanitizeConnectionName converts a connection name into a filesystem-safe
-// directory name. This is used as the connection's local_path so it never
-// needs to be entered manually. Since connection names are unique (unique
-// index on "name"), the derived directory names are unique too — this is
-// what prevents two connections from ever being mirrored into the same
-// directory (see docs/connections-mirror-design.md).
+// directory name. The mirror destination for a connection is always derived
+// from its name at the moment it's needed (dataRoot/<name> or
+// dataRoot/.mirror/<name>) rather than stored, so two connections can never
+// collide on the same directory as long as their names differ (names are
+// unique via a unique index).
 func SanitizeConnectionName(name string) string {
 	cleaned := unsafePathCharsRe.ReplaceAllString(name, "_")
 	cleaned = strings.TrimSpace(cleaned)
@@ -35,8 +35,6 @@ func SanitizeConnectionName(name string) string {
 
 // ConnectionInput is the plaintext data accepted from the create/update API.
 // Token is empty on update when the caller wants to keep the existing token.
-// There is no LocalPath field: it is always derived server-side from Name
-// (see SanitizeConnectionName), not supplied by the caller.
 type ConnectionInput struct {
 	Name      string
 	RemoteURL string
@@ -51,9 +49,8 @@ type ConnectionInput struct {
 }
 
 // CreateConnection encrypts the token and inserts a new "connections" record.
-// local_path is derived from the connection name at creation time. hooksDir
-// is the operator-configured directory of runnable hook scripts; in.HookName
-// is validated against it before the record is saved.
+// hooksDir is the operator-configured directory of runnable hook scripts;
+// in.HookName is validated against it before the record is saved.
 func (db *Database) CreateConnection(hooksDir string, in ConnectionInput) (*core.Record, error) {
 	if _, err := hook.Resolve(hooksDir, in.HookName); err != nil {
 		return nil, errs.Newf("invalid hook: %v", err)
@@ -73,7 +70,6 @@ func (db *Database) CreateConnection(hooksDir string, in ConnectionInput) (*core
 	record.Set("remote_url", in.RemoteURL)
 	record.Set("username", in.Username)
 	record.Set("token_ciphertext", ciphertext)
-	record.Set("local_path", SanitizeConnectionName(in.Name))
 	record.Set("enabled", in.Enabled)
 	record.Set("hook_name", in.HookName)
 	if err := db.app.Save(record); err != nil {
@@ -86,11 +82,6 @@ func (db *Database) CreateConnection(hooksDir string, in ConnectionInput) (*core
 // re-encrypted when in.Token is non-empty, so editing other fields doesn't
 // require re-entering the secret. hooksDir is used the same way as in
 // CreateConnection, to validate in.HookName before saving.
-//
-// local_path is intentionally left untouched here, even if Name changes:
-// it was fixed at creation time. Recomputing it on every rename would
-// silently orphan the existing local clone (the mirror data would still be
-// on disk under the old directory name, but no longer be found).
 func (db *Database) UpdateConnection(hooksDir, id string, in ConnectionInput) (*core.Record, error) {
 	if _, err := hook.Resolve(hooksDir, in.HookName); err != nil {
 		return nil, errs.Newf("invalid hook: %v", err)
@@ -121,28 +112,6 @@ func (db *Database) UpdateConnection(hooksDir, id string, in ConnectionInput) (*
 	return record, nil
 }
 
-// EnsureLocalPath returns the connection's local_path, backfilling it from
-// the connection's name if it is empty or ".". This self-heals connections
-// created before local_path became a derived, non-editable field (including
-// the ones that used to collide on the same directory). The backfilled
-// value is persisted, so this only runs once per connection.
-func (db *Database) EnsureLocalPath(id string) (string, error) {
-	record, err := db.app.FindRecordById("connections", id)
-	if err != nil {
-		return "", errs.Newf("find connection: %v", err)
-	}
-	path := record.GetString("local_path")
-	if path != "" && path != "." {
-		return path, nil
-	}
-	path = SanitizeConnectionName(record.GetString("name"))
-	record.Set("local_path", path)
-	if err := db.app.Save(record); err != nil {
-		return "", errs.Newf("backfill local_path: %v", err)
-	}
-	return path, nil
-}
-
 // DecryptConnectionToken decrypts a connection's token for one-off use (e.g.
 // building a git remote URL). The caller must zero the result with
 // cryptoutil.Zero once done.
@@ -158,12 +127,14 @@ func (db *Database) DecryptConnectionToken(id string) ([]byte, error) {
 // needed by the mirror package. The token is fetched separately via
 // DecryptConnectionToken so it's never bundled into a struct that outlives
 // a single Sync call.
+//
+// There is no LocalPath field: the mirror destination is always derived
+// from Name (via SanitizeConnectionName) at the point of use, not stored.
 type MirrorableConnection struct {
 	ID        string
 	Name      string
 	RemoteURL string
 	Username  string
-	LocalPath string
 	// HookName is the post-sync hook to run after a successful mirror
 	// sync, or "" if none is configured (see internal/hook).
 	HookName string
@@ -181,7 +152,6 @@ func (db *Database) GetMirrorConnection(id string) (MirrorableConnection, error)
 		Name:      record.GetString("name"),
 		RemoteURL: record.GetString("remote_url"),
 		Username:  record.GetString("username"),
-		LocalPath: record.GetString("local_path"),
 		HookName:  record.GetString("hook_name"),
 	}, nil
 }
@@ -200,7 +170,6 @@ func (db *Database) ListEnabledConnections() ([]MirrorableConnection, error) {
 			Name:      r.GetString("name"),
 			RemoteURL: r.GetString("remote_url"),
 			Username:  r.GetString("username"),
-			LocalPath: r.GetString("local_path"),
 			HookName:  r.GetString("hook_name"),
 		})
 	}
