@@ -9,7 +9,7 @@
         <!-- 内部の線を太く -->
         <g
           stroke="#609926"
-          stroke-width="0.8"
+          stroke-width="1.2"
           stroke-linecap="round"
           stroke-linejoin="round"
           fill="none"
