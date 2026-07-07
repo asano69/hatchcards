@@ -28,7 +28,7 @@ export default function Card(props) {
         />
          <Show when={card().revealed && card().lastReviewedAt}>
           <div class="px-6 pb-4 text-sm text-[var(--color-border-soft)] text-right">
-            Last reviewed: {card().lastReviewedAt.replace("T", " ").slice(0, 16)}
+            Last reviewed: {card().lastReviewedAt}
           </div>
         </Show>
       </div>
