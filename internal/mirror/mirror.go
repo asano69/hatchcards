@@ -1,6 +1,3 @@
-// Package mirror clones or pulls a Git repository into a local directory,
-// using go-git. This is the only package that touches go-git directly;
-// callers supply plain connection data plus a decrypted token.
 package mirror
 
 import (
@@ -9,15 +6,14 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
-	transport "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	transporthttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sirupsen/logrus"
 
 	"github.com/asano69/hashcards/internal/errs"
 )
 
-// Connection is the plain (non-secret) data needed to mirror one repository.
-// The token is passed separately to Sync and never stored here, so a
-// Connection value can be logged or included in error messages safely.
+// Connection は変更なし
 type Connection struct {
 	Name      string
 	RemoteURL string
@@ -25,35 +21,25 @@ type Connection struct {
 	LocalPath string
 }
 
-// isGitRepo reports whether path contains a ".git" entry, i.e. whether it is
-// the root of an existing git working copy. This is deliberately stricter
-// than "does the directory exist", because LocalPath may already exist as
-// an empty directory (e.g. created by a volume mount) without ever having
-// been cloned into.
 func isGitRepo(path string) bool {
 	info, err := os.Stat(filepath.Join(path, ".git"))
 	return err == nil && (info.IsDir() || info.Mode().IsRegular())
 }
 
-// Sync brings LocalPath up to date with RemoteURL: it clones the repository
-// if LocalPath doesn't exist yet (or exists but isn't a git repo), or pulls
-// into an existing clone otherwise.
+// Sync brings LocalPath up to date with RemoteURL.
 //
-// token is the decrypted access token, used only for the duration of this
-// call. Sync never retains a reference to it; the caller is responsible for
-// zeroing it afterwards (see cryptoutil.Zero).
-//
-// Authentication is passed to go-git as a BasicAuth credential rather than
-// embedded into the URL, so RemoteURL stays free of secrets and is safe to
-// include in error messages.
+// token may be empty when mirroring a public repository that requires no
+// authentication. In that case, no auth credential is attached at all —
+// go-git accepts a nil AuthMethod and performs an anonymous fetch/clone.
 func Sync(conn Connection, token []byte) error {
-	auth := &transport.BasicAuth{Username: conn.Username, Password: string(token)}
+	auth := buildAuth(conn.Username, token)
 
 	log := logrus.WithFields(logrus.Fields{
 		"connection": conn.Name,
 		"remote_url": conn.RemoteURL,
 		"username":   conn.Username,
 		"local_path": conn.LocalPath,
+		"anonymous":  auth == nil,
 	})
 
 	info, statErr := os.Stat(conn.LocalPath)
@@ -71,11 +57,6 @@ func Sync(conn Connection, token []byte) error {
 		return errs.Newf("local path %s exists but is not a directory", conn.LocalPath)
 
 	case !isGitRepo(conn.LocalPath):
-		// local_path exists (e.g. an empty directory) but was never cloned
-		// into. Cloning into an existing *empty* directory is fine for
-		// go-git/git; a non-empty, non-repo directory will fail clone with
-		// a clear error instead of the confusing "repository does not
-		// exist" that PlainOpen used to produce here.
 		log.Warn("mirror sync: local_path exists but has no .git, cloning into it")
 		return clone(conn, auth, log)
 
@@ -85,7 +66,19 @@ func Sync(conn Connection, token []byte) error {
 	}
 }
 
-func clone(conn Connection, auth *transport.BasicAuth, log *logrus.Entry) error {
+// buildAuth returns a BasicAuth credential, or nil when both username and
+// token are empty. A nil AuthMethod tells go-git to attempt an
+// unauthenticated (anonymous) operation, which is required for mirroring
+// public repositories that reject requests carrying an empty-but-present
+// Basic auth header.
+func buildAuth(username string, token []byte) transport.AuthMethod {
+	if username == "" && len(token) == 0 {
+		return nil
+	}
+	return &transporthttp.BasicAuth{Username: username, Password: string(token)}
+}
+
+func clone(conn Connection, auth transport.AuthMethod, log *logrus.Entry) error {
 	_, err := git.PlainClone(conn.LocalPath, false, &git.CloneOptions{
 		URL:  conn.RemoteURL,
 		Auth: auth,
@@ -98,18 +91,13 @@ func clone(conn Connection, auth *transport.BasicAuth, log *logrus.Entry) error 
 	return nil
 }
 
-func pull(conn Connection, auth *transport.BasicAuth, log *logrus.Entry) error {
+func pull(conn Connection, auth transport.AuthMethod, log *logrus.Entry) error {
 	repo, err := git.PlainOpen(conn.LocalPath)
 	if err != nil {
 		log.WithError(err).Error("mirror sync: PlainOpen failed")
 		return errs.Newf("open local repo for %q: %v", conn.Name, err)
 	}
 
-	// Guard against local_path being shared by two different connections:
-	// if the repo's configured "origin" doesn't match this connection's
-	// RemoteURL, pulling would silently send this connection's credentials
-	// to whatever remote is actually configured — producing confusing
-	// errors that look like an auth problem with the wrong remote.
 	remote, err := repo.Remote("origin")
 	if err != nil {
 		log.WithError(err).Error("mirror sync: could not read origin remote")

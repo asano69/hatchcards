@@ -80,8 +80,7 @@ export default function Connections() {
                 </Show>
               </div>
               <div class="flex gap-2">
-                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" });  await refetch();}}
-/>
+                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" });  await refetch();}} />
                 <Button value="Edit" onClick={() => startEdit(c)} />
                 <Button variant="danger" value="Delete" onClick={() => remove(c.id)} />
               </div>
@@ -96,10 +95,10 @@ export default function Connections() {
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
         <input placeholder="Remote URL (https://github.com/org/repo.git)" value={form().remote_url} onInput={set("remote_url")} required
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
-        <input placeholder="Username" value={form().username} onInput={set("username")} required
+        <input placeholder="Username (leave empty for public repositories)" value={form().username} onInput={set("username")}
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
-        <input type="password" value={form().token} onInput={set("token")} required={!form().id}
-          placeholder={form().id ? "Token (leave blank to keep existing)" : "Token"}
+        <input type="password" value={form().token} onInput={set("token")}
+          placeholder={form().id ? "Token (leave blank to keep existing / public repo)" : "Token (leave empty for public repositories)"}
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
         <label class="flex flex-col gap-1">
           <span class="text-sm text-[var(--color-border-soft)]">Post-sync hook (optional)</span>
