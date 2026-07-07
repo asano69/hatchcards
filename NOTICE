@@ -1,6 +1,0 @@
-go-hatchcards
-Copyright 2026 asano69
-This product includes software developed by 
-- Original Project: [eudoxia0/hashcards](https://github.com/eudoxia0/hashcards)
-- Changes: This project is a complete port/translation of the original 
-  Rust implementation into Go.
