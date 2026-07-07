@@ -12,7 +12,7 @@ This application is programmable and automates flashcard generation from Q&A lis
 
 
 
-Features:
+### Features
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
@@ -22,7 +22,7 @@ Features:
 
 
 
-Tech Stack
+### Tech Stack
 - Go
 - [SolidJS](https://github.com/solidjs/solid)
 - [PocketBase](https://github.com/pocketbase/pocketbase)
