@@ -33,7 +33,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_tag}}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
             type=sha
       - uses: docker/build-push-action@v6
         with:
