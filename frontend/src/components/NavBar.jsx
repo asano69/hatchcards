@@ -29,7 +29,7 @@ export default function NavBar(props) {
   return (
     <div class="mb-10 flex w-full items-center justify-between">
 <A href="/" class="font-serif text-4xl flex items-center gap-2 transition-opacity hover:opacity-80">
-  <img src="/favicon.svg" alt="" class="h-12 w-12" />#
+  <img src="/favicon.svg" alt="" class="h-12 w-12" />
 </A>
       <nav class="flex items-center gap-3">
         <button type="button" class="btn" disabled={refreshing()} onClick={handleRefresh}>
