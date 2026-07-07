@@ -6,8 +6,8 @@
 >[!WARNING]
 >This app is still under development.
 
-[hashcards](https://github.com/eudoxia0/hashcards) is a plain-text spaced repetition system.  
-It parses JSON files containing flashcards, stores performance data in SQLite3, and presents cards through a web interface using the FSRS algorithm for scheduling.
+This application is programmable and automates flashcard generation from Q&A lists in arbitrary formats through JSON intermediate files. It stores performance data in SQLite3 and supports efficient spaced repetition through scheduling based on the FSRS algorithm.
+
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 Features:
@@ -263,6 +263,7 @@ The `reviews` table has the following schema:
 
 ## Prior Art
 
+- [eudoxia0/hashcards](https://github.com/eudoxia0/hashcards)
 - [org-fc](https://github.com/l3kn/org-fc)
 - [org-drill](https://orgmode.org/worg/org-contrib/org-drill.html)
 - [hascard](https://hackage.haskell.org/package/hascard)
