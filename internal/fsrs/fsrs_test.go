@@ -27,6 +27,9 @@ func (s simStep) equal(other simStep) bool {
 }
 
 // sim simulates a series of reviews, matching the Rust test helper sim().
+// It computes intervals via Interval() directly rather than through
+// UpdatePerformance, so it is unaffected by fuzz and keeps testing the pure
+// FSRS formulas.
 func sim(grades []Grade) []simStep {
 	if len(grades) == 0 {
 		return nil
@@ -199,11 +202,23 @@ func TestInvalidGradeString(t *testing.T) {
 	}
 }
 
+// wantFuzzedIntervalDays recomputes what UpdatePerformance should have
+// produced for IntervalDays, using the same fuzz algorithm (see fuzz.go)
+// applied to the already-verified IntervalRaw. This keeps the test honest
+// about the fuzz step without hardcoding a fuzzed magic number.
+func wantFuzzedIntervalDays(cardHash types.CardHash, reviewCount int, intervalRaw float64, cfg FSRSConfig) int64 {
+	minimum := int64(math.Round(cfg.MinInterval))
+	maximum := int64(math.Round(cfg.MaxInterval))
+	fuzzFactor := FuzzFactor(cardHash, reviewCount)
+	return WithReviewFuzz(&fuzzFactor, intervalRaw, minimum, maximum)
+}
+
 // TestUpdatePerformanceNewCard matches Rust's test_update_new_card.
 func TestUpdatePerformanceNewCard(t *testing.T) {
 	reviewedAt := types.Now()
+	cardHash := types.HashBytes([]byte("a"))
 	perf := types.NewCardPerformance()
-	result := UpdatePerformance(perf, GradeGood, reviewedAt, DefaultFSRSConfig)
+	result := UpdatePerformance(cardHash, perf, GradeGood, reviewedAt, DefaultFSRSConfig)
 
 	if !result.LastReviewedAt.Equal(reviewedAt) {
 		t.Errorf("LastReviewedAt = %v, want %v", result.LastReviewedAt, reviewedAt)
@@ -217,8 +232,10 @@ func TestUpdatePerformanceNewCard(t *testing.T) {
 	if !approxEq(result.IntervalRaw, 3.17) {
 		t.Errorf("IntervalRaw = %f, want ≈ 3.17", result.IntervalRaw)
 	}
-	if result.IntervalDays != 3 {
-		t.Errorf("IntervalDays = %d, want 3", result.IntervalDays)
+	// A new card's fuzz seed uses review count 0 (pre-increment).
+	wantDays := wantFuzzedIntervalDays(cardHash, 0, result.IntervalRaw, DefaultFSRSConfig)
+	if result.IntervalDays != wantDays {
+		t.Errorf("IntervalDays = %d, want %d (fuzzed from IntervalRaw=%f)", result.IntervalDays, wantDays, result.IntervalRaw)
 	}
 	if result.ReviewCount != 1 {
 		t.Errorf("ReviewCount = %d, want 1", result.ReviewCount)
@@ -228,6 +245,7 @@ func TestUpdatePerformanceNewCard(t *testing.T) {
 // TestUpdatePerformanceAlreadyReviewed matches Rust's test_update_already_reviewed_card.
 func TestUpdatePerformanceAlreadyReviewed(t *testing.T) {
 	now := types.Now()
+	cardHash := types.HashBytes([]byte("a"))
 	lastReviewedAt := types.NewTimestamp(now.Time().Add(-3 * 24 * time.Hour))
 	dueDate := types.NewDate(lastReviewedAt.Time().Add(3 * 24 * time.Hour))
 
@@ -241,7 +259,7 @@ func TestUpdatePerformanceAlreadyReviewed(t *testing.T) {
 		ReviewCount:    1,
 	}
 	perf := types.ReviewedCardPerformance(rp)
-	result := UpdatePerformance(perf, GradeEasy, now, DefaultFSRSConfig)
+	result := UpdatePerformance(cardHash, perf, GradeEasy, now, DefaultFSRSConfig)
 
 	if !result.LastReviewedAt.Equal(now) {
 		t.Errorf("LastReviewedAt = %v, want %v", result.LastReviewedAt, now)
@@ -255,8 +273,10 @@ func TestUpdatePerformanceAlreadyReviewed(t *testing.T) {
 	if !approxEq(result.IntervalRaw, 25.80) {
 		t.Errorf("IntervalRaw = %f, want ≈ 25.80", result.IntervalRaw)
 	}
-	if result.IntervalDays != 26 {
-		t.Errorf("IntervalDays = %d, want 26", result.IntervalDays)
+	// The card had ReviewCount=1 before this review, so the fuzz seed uses 1.
+	wantDays := wantFuzzedIntervalDays(cardHash, 1, result.IntervalRaw, DefaultFSRSConfig)
+	if result.IntervalDays != wantDays {
+		t.Errorf("IntervalDays = %d, want %d (fuzzed from IntervalRaw=%f)", result.IntervalDays, wantDays, result.IntervalRaw)
 	}
 	if result.ReviewCount != 2 {
 		t.Errorf("ReviewCount = %d, want 2", result.ReviewCount)

@@ -102,7 +102,10 @@ func (s *State) Grade(grade fsrs.Grade) (types.ReviewedPerformance, bool) {
 	s.Revealed = false
 
 	now := types.Now()
-	newPerf := fsrs.UpdatePerformance(dc.Performance, grade, now, s.fsrsCfg)
+	// The card's hash seeds the fuzz factor applied to the new interval
+	// (see internal/fsrs/fuzz.go), so the same card+review always fuzzes
+	// the same way while different cards fuzz independently.
+	newPerf := fsrs.UpdatePerformance(dc.Card.Hash(), dc.Performance, grade, now, s.fsrsCfg)
 
 	s.Done = append(s.Done, CompletedReview{
 		Card:                dc.Card,

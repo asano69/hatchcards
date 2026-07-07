@@ -213,7 +213,13 @@ func clampDifficulty(d float64) float64 {
 
 // UpdatePerformance computes new scheduling parameters after a review.
 // It is the Go equivalent of update_performance() in the Rust implementation.
+//
+// cardHash identifies the card being reviewed; together with the review
+// count, it seeds the deterministic fuzz factor (see fuzz.go) applied to
+// the scheduled interval, so repeated reviews of the same card don't all
+// land on the same day relative to one another.
 func UpdatePerformance(
+	cardHash types.CardHash,
 	perf types.Performance,
 	grade Grade,
 	reviewedAt types.Timestamp,
@@ -239,9 +245,17 @@ func UpdatePerformance(
 	}
 
 	intervalRaw := Interval(cfg.TargetRecall, stability)
-	intervalRounded := math.Round(intervalRaw)
-	intervalClamped := math.Max(cfg.MinInterval, math.Min(cfg.MaxInterval, intervalRounded))
-	intervalDays := int64(intervalClamped)
+
+	// Fuzz the interval so cards that would otherwise all land on the same
+	// due date get spread out. The fuzz factor is seeded from the card's
+	// hash and its (pre-increment) review count, so it is deterministic
+	// for a given card+review but varies across cards and across repeated
+	// reviews of the same card.
+	minimum := int64(math.Round(cfg.MinInterval))
+	maximum := int64(math.Round(cfg.MaxInterval))
+	fuzzFactor := FuzzFactor(cardHash, reviewCount)
+	intervalDays := WithReviewFuzz(&fuzzFactor, intervalRaw, minimum, maximum)
+
 	dueDate := types.NewDate(today.Add(time.Duration(intervalDays) * 24 * time.Hour))
 
 	return types.ReviewedPerformance{
