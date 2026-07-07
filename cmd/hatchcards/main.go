@@ -33,7 +33,7 @@ func main() {
 	root.Use = "hatchcards"
 	root.Short = "A spaced-repetition flashcard tool"
 	root.SilenceUsage = true
-	root.Version = "0.1.0-beta.7"
+	root.Version = "0.1.0-beta.8"
 
 	root.AddCommand(
 		checkCmd(),
