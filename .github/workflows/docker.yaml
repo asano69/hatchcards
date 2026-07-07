@@ -5,6 +5,8 @@ on:
     tags: ["v*"]
     paths:
       - main.go
+      - Dockerfile
+      - entrypoint.sh
 
 env:
   IMAGE_NAME: ${{ github.repository }}

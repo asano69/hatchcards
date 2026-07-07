@@ -40,10 +40,16 @@ RUN apk add --no-cache \
     git \
     openssh-client
 
+
+
+
+
 RUN addgroup -g 1000 hashcards && \
     adduser -D -u 1000 -G hashcards hashcards
 
 COPY --from=go-builder /build/hashcards /usr/local/bin/hashcards
+
+RUN mkdir -p /certs
 
 RUN mkdir -p /hashcards/data
 RUN mkdir -p /hashcards/cards
@@ -54,7 +60,12 @@ RUN mkdir -p /hashcards/cards
 RUN mkdir -p /hashcards/hooks
 
 RUN chown -R 1000:1000 /hashcards
-USER 1000:1000
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 3000
-ENTRYPOINT ["hashcards", "serve"]
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["hashcards", "serve"]
+
