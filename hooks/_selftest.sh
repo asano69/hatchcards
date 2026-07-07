@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hooks/_selftest — verify the hook contract (absolute paths, both argv and env).
+# hooks/_selftest.sh — verify the hook contract (absolute paths, both argv and env).
 echo "argv1 (source): $1"
 echo "argv2 (output): $2"
 echo "ENV  (source): $HASHCARDS_SOURCE_DIR"
