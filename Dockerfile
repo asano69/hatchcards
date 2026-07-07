@@ -48,7 +48,7 @@ RUN apk add --no-cache \
     curl \
     rsync \
     python3 \
-    gaw
+    gawk
 
 
 RUN addgroup -g 1000 hashcards && \
