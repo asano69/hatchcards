@@ -128,9 +128,9 @@ been graded "Good" or higher. You can end the session prematurely by clicking
 
 ## Recommended Workflow
 1. In a Markdown editor such as Obsidian, take notes on what you have understood about topics that interest you.
-1. In question sections (e.g. `## Question::DeckName {{Q&A}} ---`), write the information you want to memorize as a list of Q&A pairs.
-1. Push the Markdown notes to a remote repository.
-1. If the repository is configured appropriately, flashcards will be generated automatically.
+2. In question sections (e.g. `## Question::DeckName {{Q&A}} ---`), write the information you want to memorize as a list of Q&A pairs.
+3. Push the Markdown notebooks to a remote repository.
+4. If the repository is configured appropriately, flashcards will be generated automatically.
 
 ## Commands
 
