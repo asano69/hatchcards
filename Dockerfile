@@ -38,8 +38,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Stage 2: Runtime
 # ==========================================
 FROM alpine:3.23
-COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /usr/local/bin/
-...
+COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /usr/local/bin/
+
 
 WORKDIR /hatchcards
 
