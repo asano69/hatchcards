@@ -1,7 +1,6 @@
 import { createResource, createSignal, For, Show } from "solid-js";
-import NavBar from "../components/NavBar";
-import Button from "../components/Button";
-import pb from "../lib/pb";
+import Button from "../../components/Button";
+import pb from "../../lib/pb";
 
 const emptyForm = { id: null, name: "", remote_url: "", username: "", token: "", enabled: true, hook_name: "" };
 
@@ -17,6 +16,7 @@ async function fetchHooks() {
   return res.hooks ?? [];
 }
 
+// Connections section of the Settings page: manage git mirror connections.
 export default function Connections() {
   const [connections, { refetch }] = createResource(fetchConnections);
   const [hooks] = createResource(fetchHooks);
@@ -60,9 +60,8 @@ export default function Connections() {
   };
 
   return (
-    <div class="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 bg-[var(--color-bg)] px-6 py-12 text-[var(--color-text)]">
-      <NavBar onRefresh={refetch} />
-      <h1 class="font-serif text-4xl">Mirror Connections</h1>
+    <div class="flex flex-col gap-6">
+      <h2 class="font-serif text-3xl">Mirror Connections</h2>
 
       <ul class="flex flex-col gap-3">
         <For each={connections()}>
@@ -71,7 +70,7 @@ export default function Connections() {
               <div>
                 <div class="font-semibold">{c.name}</div>
                 <div class="text-sm text-[var(--color-border-soft)]">{c.remote_url}</div>
-            
+
                 <Show when={c.hook_name}>
                   <div class="text-sm text-[var(--color-border-soft)]">hook: {c.hook_name}</div>
                 </Show>
@@ -80,7 +79,7 @@ export default function Connections() {
                 </Show>
               </div>
               <div class="flex gap-2">
-                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" });  await refetch();}} />
+                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" }); await refetch(); }} />
                 <Button value="Edit" onClick={() => startEdit(c)} />
                 <Button variant="danger" value="Delete" onClick={() => remove(c.id)} />
               </div>
@@ -90,7 +89,7 @@ export default function Connections() {
       </ul>
 
       <form onSubmit={save} class="flex flex-col gap-3 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] p-6">
-        <h2 class="text-xl">{form().id ? "Edit Connection" : "New Connection"}</h2>
+        <h3 class="text-xl">{form().id ? "Edit Connection" : "New Connection"}</h3>
         <input placeholder="Name" value={form().name} onInput={set("name")} required
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
         <input placeholder="Remote URL (https://github.com/org/repo.git)" value={form().remote_url} onInput={set("remote_url")} required

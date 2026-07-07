@@ -11,9 +11,9 @@ import "highlight.js/styles/github.css";
 import Home from "./routes/Home";
 import Drill from "./routes/Drill";
 import Stats from "./routes/Stats";
-import Admin from "./routes/Admin";
+import Settings from "./routes/Settings";
 import Login from "./routes/Login";
-import Connections from "./routes/Connections";
+
 import pb from "./lib/pb";
 
 // AuthGate blocks the whole app behind Login until a valid superuser
@@ -38,8 +38,7 @@ render(
         <Route path="/" component={Home} />
         <Route path="/drill" component={Drill} />
         <Route path="/stats" component={Stats} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/connections" component={Connections} />
+        <Route path="/settings" component={Settings} />
       </Router>
     </AuthGate>
   ),
