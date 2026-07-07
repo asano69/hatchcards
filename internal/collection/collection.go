@@ -129,7 +129,15 @@ func walkDecks(root string) ([]types.Card, error) {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.ToLower(filepath.Ext(path)) == ".json" {
+		if d.IsDir() {
+			// Skip hidden directories (e.g. ".git", ".mirror"), but never
+			// skip root itself even if its own name starts with a dot.
+			if path != root && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.ToLower(filepath.Ext(path)) == ".json" {
 			deckPaths = append(deckPaths, path)
 		}
 		return nil
