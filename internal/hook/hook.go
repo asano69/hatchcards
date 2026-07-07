@@ -18,7 +18,7 @@ import (
 
 // nameRe rejects anything but a bare identifier, so a name can never
 // escape hooksDir via "../" or an absolute path.
-var nameRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+var nameRe = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
 
 // List returns the names of every executable regular file in hooksDir, i.e.
 // every hook a connection is allowed to reference. It returns an empty list
