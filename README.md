@@ -21,10 +21,6 @@ Features:
   implemented using a Makefile and some scripts.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
-
-
-Differences from the Original:
-
 - **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 
