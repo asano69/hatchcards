@@ -138,6 +138,10 @@ type MirrorableConnection struct {
 	// HookName is the post-sync hook to run after a successful mirror
 	// sync, or "" if none is configured (see internal/hook).
 	HookName string
+	// Enabled mirrors the connection's "enabled" field. The sync API
+	// checks this before running, so a disabled connection can never be
+	// synced manually either.
+	Enabled bool
 }
 
 // GetMirrorConnection returns the plain fields needed to mirror the
@@ -153,6 +157,7 @@ func (db *Database) GetMirrorConnection(id string) (MirrorableConnection, error)
 		RemoteURL: record.GetString("remote_url"),
 		Username:  record.GetString("username"),
 		HookName:  record.GetString("hook_name"),
+		Enabled:   record.GetBool("enabled"),
 	}, nil
 }
 
@@ -171,6 +176,7 @@ func (db *Database) ListEnabledConnections() ([]MirrorableConnection, error) {
 			RemoteURL: r.GetString("remote_url"),
 			Username:  r.GetString("username"),
 			HookName:  r.GetString("hook_name"),
+			Enabled:   true, // filtered by the query above
 		})
 	}
 	return out, nil

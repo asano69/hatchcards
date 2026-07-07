@@ -38,10 +38,12 @@ func toConnectionInput(b connectionRequest) db.ConnectionInput {
 }
 
 // RegisterConnectionsAPI wires up the two encryption-sensitive endpoints.
+// dataRoot is used to locate a connection's local data (dataRoot/<name> and
+// dataRoot/.mirror/<name>) for cleanup when a connection is disabled.
 // hooksDir is forwarded to db.CreateConnection / db.UpdateConnection so a
 // connection's hook_name is validated against the operator-configured hooks
 // directory before it is saved.
-func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.Database, hooksDir string) {
+func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.Database, dataRoot, hooksDir string) {
 	r.POST("/api/connections", func(e *core.RequestEvent) error {
 		var body connectionRequest
 		if err := e.BindBody(&body); err != nil {
@@ -65,6 +67,16 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 			logrus.WithError(err).Warn("update connection failed")
 			return e.BadRequestError("update connection failed", err)
 		}
+
+		// Disabling a connection also removes its local data, so it leaves
+		// no trace on disk until it's re-enabled and synced again.
+		if !body.Enabled {
+			if err := removeConnectionData(dataRoot, body.Name); err != nil {
+				logrus.WithError(err).Warn("cleanup connection data failed")
+				return e.BadRequestError("cleanup connection data failed", err)
+			}
+		}
+
 		return e.JSON(http.StatusOK, record)
 	}).Bind(apis.RequireSuperuserAuth())
 }

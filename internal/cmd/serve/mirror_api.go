@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/db"
+	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/hook"
 	"github.com/asano69/hashcards/internal/mirror"
 	"github.com/pocketbase/pocketbase/apis"
@@ -15,6 +16,7 @@ import (
 	"github.com/pocketbase/pocketbase/tools/router"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -80,6 +82,9 @@ func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error 
 	mc, err := database.GetMirrorConnection(id)
 	if err != nil {
 		return err
+	}
+	if !mc.Enabled {
+		return errs.Newf("connection %q is disabled", mc.Name)
 	}
 
 	token, err := database.DecryptConnectionToken(id)
@@ -158,5 +163,27 @@ func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sour
 	}
 	log.Info("post-sync hook: succeeded")
 	logOutput(log, out)
+	return nil
+}
+
+// removeConnectionData deletes every directory hashcards may have written
+// for a connection's sanitized name: the deck directory (dataRoot/<name>)
+// and, if a hook was ever configured, its git working tree
+// (dataRoot/.mirror/<name>). It runs whenever a connection is disabled, so
+// turning off sync also removes the local copy of its data.
+//
+// os.RemoveAll on a path that doesn't exist is not an error, so it's safe
+// to call unconditionally without checking which of the two paths were
+// actually used by this connection.
+func removeConnectionData(dataRoot, name string) error {
+	sanitized := db.SanitizeConnectionName(name)
+	for _, dir := range []string{
+		filepath.Join(dataRoot, sanitized),
+		filepath.Join(dataRoot, ".mirror", sanitized),
+	} {
+		if err := os.RemoveAll(dir); err != nil {
+			return errs.Newf("remove connection data %s: %v", dir, err)
+		}
+	}
 	return nil
 }

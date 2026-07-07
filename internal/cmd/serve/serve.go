@@ -161,7 +161,7 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 		}).Bind(apis.RequireSuperuserAuth())
 
 		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
-		RegisterConnectionsAPI(e.Router, database, cfg.Data.HooksDir)
+		RegisterConnectionsAPI(e.Router, database, cfg.Data.Root, cfg.Data.HooksDir)
 		RegisterMirrorAPI(e.Router, database, cfg.Data.Root, cfg.Data.HooksDir)
 		RegisterHooksAPI(e.Router, cfg.Data.HooksDir)
 		// POST /api/rescan re-scans the deck directory and registers a
