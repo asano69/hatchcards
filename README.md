@@ -6,18 +6,12 @@
 >[!WARNING]
 >This app is still under development.
 
-**A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable, single-binary web application.**
-
-hashcards is a plain-text spaced repetition system.  
-It parses JSON files containing flashcards, stores performance data in PocketBase, and presents cards through a web interface using the FSRS algorithm for scheduling.
-
+[hashcards](https://github.com/eudoxia0/hashcards) is a plain-text spaced repetition system.  
+It parses JSON files containing flashcards, stores performance data in [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid), and presents cards through a web interface using the FSRS algorithm for scheduling.
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 Features:
 
-- **Plain Text:** all your flashcards are stored as plain text files, so you can
-  operate on them with standard tools, write with your editor of choice, and
-  track changes in a VCS.
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
 - **Low Friction:** you create flashcards by typing into a text file, using a
@@ -31,9 +25,6 @@ Features:
 
 Differences from the Original:
 
-- **SPA (Single Page Application)**: Flashcards are meant to be displayed randomly, which pairs much better with an SPA than with SSR (Server-Side Rendering). Additionally, an SPA is ideal for this project due to its lightning-fast page transitions.
-- **PocketBase**: It allows you to directly check the state of cards currently being studied without having to run SQL commands. It also integrates seamlessly with an SPA architecture where the backend and frontend are decoupled.
-- **SolidJS**: Solid.js was chosen to easily handle complex UI layouts.
 - **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 
