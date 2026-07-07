@@ -279,13 +279,8 @@ The `reviews` table has the following schema:
 [fc]: https://github.com/eudoxia0/flashcards
 [rustup]: https://rustup.rs/
 
-## License
-© 2026- by asano69. Licensed under the Apache 2.0 license.  
-© 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.  
 
 ---
-
-
 
 
 To learn how to write good flashcards, read [Effective Spaced Repetition][esr].  
