@@ -4,6 +4,9 @@ import pb from "../../lib/pb";
 
 const emptyForm = { id: null, name: "", remote_url: "", username: "", token: "", enabled: true, hook_name: "" };
 
+// How long the "just synced" checkmark stays visible after a successful sync.
+const SYNC_CHECKMARK_DURATION_MS = 2000;
+
 async function fetchConnections() {
   return pb.collection("connections").getFullList({ sort: "name" });
 }
@@ -11,6 +14,16 @@ async function fetchConnections() {
 async function fetchHooks() {
   const res = await pb.send("/api/hooks", { method: "GET" });
   return res.hooks ?? [];
+}
+
+// formatLastSynced turns a PocketBase timestamp string (or "") into a
+// locale-formatted display string, or a fallback for connections that have
+// never been synced.
+function formatLastSynced(lastSyncedAt) {
+  if (!lastSyncedAt) return "Never synced";
+  const d = new Date(lastSyncedAt.replace(" ", "T") + "Z");
+  if (Number.isNaN(d.getTime())) return lastSyncedAt;
+  return d.toLocaleString();
 }
 
 export default function Connections() {
@@ -21,6 +34,9 @@ export default function Connections() {
   // Tracks which connection's mirror sync (including its post-sync hook,
   // if any) is currently in flight, so only that row shows a spinner.
   const [syncingId, setSyncingId] = createSignal(null);
+  // Tracks which connection most recently finished a successful sync, so
+  // its row can flash a checkmark briefly before reverting to normal.
+  const [syncedId, setSyncedId] = createSignal(null);
 
   const startCreate = () => { setForm(emptyForm); setError(""); };
   const startEdit = (c) =>
@@ -60,12 +76,20 @@ export default function Connections() {
 
   // Runs the mirror sync for one connection. The server-side call blocks
   // until the git sync AND any configured post-sync hook have finished, so
-  // the spinner naturally stays up for the whole thing.
+  // the spinner naturally stays up for the whole thing. On success, flash
+  // a checkmark for a couple seconds so the user gets clear feedback that
+  // the sync (and the refreshed last_synced_at) actually landed.
   const sync = async (id) => {
     setSyncingId(id);
     try {
       await pb.send(`/api/connections/${id}/mirror`, { method: "POST" });
       await refetch();
+      setSyncedId(id);
+      setTimeout(() => {
+        // Only clear if another sync hasn't already started/finished for
+        // a different connection in the meantime.
+        setSyncedId((current) => (current === id ? null : current));
+      }, SYNC_CHECKMARK_DURATION_MS);
     } finally {
       setSyncingId(null);
     }
@@ -86,6 +110,12 @@ export default function Connections() {
                 <Show when={c.hook_name}>
                   <div class="text-sm text-[var(--color-border-soft)]">hook: {c.hook_name}</div>
                 </Show>
+
+                {/* Always-visible last sync time. */}
+                <div class="text-sm text-[var(--color-border-soft)]">
+                  Last synced: {formatLastSynced(c.last_synced_at)}
+                </div>
+
                 <Show when={c.last_error}>
                   <div class="text-sm text-[#dc3545]">{c.last_error}</div>
                 </Show>
@@ -96,6 +126,10 @@ export default function Connections() {
                     class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border-soft)] border-t-transparent"
                     aria-label="Syncing"
                   />
+                </Show>
+                {/* Brief checkmark confirming the sync just succeeded. */}
+                <Show when={syncedId() === c.id}>
+                  <span class="text-lg text-[#28a745]" aria-label="Synced">✓</span>
                 </Show>
                 <Button
                   value={syncingId() === c.id ? "Syncing…" : "Sync"}
