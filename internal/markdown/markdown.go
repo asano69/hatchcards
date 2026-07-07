@@ -1,10 +1,15 @@
 // Package markdown renders card content to HTML using goldmark.
 //
 // HTMLFront and HTMLBack are the primary entry points. They accept a
-// types.Card and the absolute path of the deck file that contains it.
+// types.Card, the absolute path of the deck file that contains it, and the
+// absolute path of the collection root. collectionRoot is required because
+// the drill server always serves media files relative to it (see
+// handlers.RegisterAPI's "/drill/file/{path...}" route), regardless of
+// which subdirectory the deck file itself lives in.
 //
 // Image and audio src attributes are rewritten to <fileMountBase>/file/<path>
-// URLs so the drill server can serve them directly.
+// URLs, where <path> is always collectionRoot-relative, so the drill server
+// can serve them directly.
 //
 // Math syntax ($...$ and $$...$$) is preprocessed into spans with the
 // "math-inline" and "math-display" CSS classes that KaTeX.js expects.
@@ -20,6 +25,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 
+	"github.com/asano69/hashcards/internal/media"
 	"github.com/asano69/hashcards/internal/types"
 )
 
@@ -58,16 +64,18 @@ var inlineMathRe = regexp.MustCompile(`\$([^$\n]+?)\$`)
 const clozePlaceholder = "XHASHCARDSCLOZEX"
 
 // HTMLFront returns the HTML for the front face of a card.
+// deckFilePath is the absolute path of the deck file the card came from.
+// collectionRoot is the absolute path of the collection root (see package doc).
 // fileMountBase is the URL prefix used when constructing /file/ paths,
 // e.g. "/drill/geo". Pass "" to use the bare path "/file/...".
-func HTMLFront(card types.Card, deckFilePath string, fileMountBase string) (string, error) {
+func HTMLFront(card types.Card, deckFilePath, collectionRoot, fileMountBase string) (string, error) {
 	cc := card.Content()
 	switch cc.Kind() {
 	case types.CardTypeBasic:
-		return renderMarkdown(cc.Question, deckFilePath, fileMountBase)
+		return renderMarkdown(cc.Question, deckFilePath, collectionRoot, fileMountBase)
 	default: // CardTypeCloze
 		src := clozeWithPlaceholder(cc.Text, cc.Start, cc.End)
-		rendered, err := renderMarkdown(src, deckFilePath, fileMountBase)
+		rendered, err := renderMarkdown(src, deckFilePath, collectionRoot, fileMountBase)
 		if err != nil {
 			return "", err
 		}
@@ -76,12 +84,12 @@ func HTMLFront(card types.Card, deckFilePath string, fileMountBase string) (stri
 }
 
 // HTMLBack returns the HTML for the back face of a card.
-// fileMountBase is the URL prefix used when constructing /file/ paths.
-func HTMLBack(card types.Card, deckFilePath string, fileMountBase string) (string, error) {
+// See HTMLFront for the meaning of deckFilePath, collectionRoot, and fileMountBase.
+func HTMLBack(card types.Card, deckFilePath, collectionRoot, fileMountBase string) (string, error) {
 	cc := card.Content()
 	switch cc.Kind() {
 	case types.CardTypeBasic:
-		return renderMarkdown(cc.Answer, deckFilePath, fileMountBase)
+		return renderMarkdown(cc.Answer, deckFilePath, collectionRoot, fileMountBase)
 	default: // CardTypeCloze
 		textBytes := []byte(cc.Text)
 		end := cc.End
@@ -91,12 +99,12 @@ func HTMLBack(card types.Card, deckFilePath string, fileMountBase string) (strin
 		// Render the deleted content separately as inline markdown so that
 		// any markup inside the deletion (e.g. math) is properly rendered.
 		deleted := string(textBytes[cc.Start : end+1])
-		renderedDeleted, err := renderMarkdownInline(deleted, deckFilePath, fileMountBase)
+		renderedDeleted, err := renderMarkdownInline(deleted, deckFilePath, collectionRoot, fileMountBase)
 		if err != nil {
 			return "", err
 		}
 		src := clozeWithPlaceholder(cc.Text, cc.Start, cc.End)
-		rendered, err := renderMarkdown(src, deckFilePath, fileMountBase)
+		rendered, err := renderMarkdown(src, deckFilePath, collectionRoot, fileMountBase)
 		if err != nil {
 			return "", err
 		}
@@ -118,8 +126,8 @@ func clozeWithPlaceholder(text string, start, end int) string {
 // renderMarkdownInline renders markdown and strips the outer <p>...</p>
 // wrapper when the result is a single paragraph, matching the Rust
 // markdown_to_html_inline behaviour.
-func renderMarkdownInline(src, deckFilePath, fileMountBase string) (string, error) {
-	html, err := renderMarkdown(src, deckFilePath, fileMountBase)
+func renderMarkdownInline(src, deckFilePath, collectionRoot, fileMountBase string) (string, error) {
+	html, err := renderMarkdown(src, deckFilePath, collectionRoot, fileMountBase)
 	if err != nil {
 		return "", err
 	}
@@ -130,8 +138,8 @@ func renderMarkdownInline(src, deckFilePath, fileMountBase string) (string, erro
 }
 
 // renderMarkdown converts a Markdown string to HTML, then rewrites image and
-// audio src attributes to <fileMountBase>/file/<relative-path> URLs.
-func renderMarkdown(src, deckFilePath, fileMountBase string) (string, error) {
+// audio src attributes to <fileMountBase>/file/<collectionRoot-relative-path> URLs.
+func renderMarkdown(src, deckFilePath, collectionRoot, fileMountBase string) (string, error) {
 	src = rewriteAudioMarkdown(src)
 	src = preprocessMath(src)
 
@@ -139,7 +147,7 @@ func renderMarkdown(src, deckFilePath, fileMountBase string) (string, error) {
 	if err := renderer.Convert([]byte(src), &buf); err != nil {
 		return "", err
 	}
-	result := rewriteSrcs(buf.String(), deckFilePath, fileMountBase)
+	result := rewriteSrcs(buf.String(), deckFilePath, collectionRoot, fileMountBase)
 	return result, nil
 }
 
@@ -170,17 +178,28 @@ func rewriteAudioMarkdown(src string) string {
 }
 
 // rewriteSrcs rewrites every relative src attribute in <img> and <audio>
-// elements to a <fileMountBase>/file/<path> URL so the drill server can serve them.
+// elements to a <fileMountBase>/file/<path> URL, where <path> is always
+// collectionRoot-relative — regardless of which subdirectory the deck file
+// itself lives in. This reuses media.Resolve so that rendering and
+// media.Validate/Load never disagree about where a reference points.
 // Absolute URLs and data URIs are left unchanged.
-func rewriteSrcs(rawHTML, deckFilePath, fileMountBase string) string {
+func rewriteSrcs(rawHTML, deckFilePath, collectionRoot, fileMountBase string) string {
 	rewrite := func(src string) string {
 		if isURL(src) {
 			return src
 		}
-		if strings.HasPrefix(src, "@/") {
-			return fileMountBase + "/file/" + src[2:]
+		resolved, err := media.Resolve(deckFilePath, src)
+		if err != nil {
+			// Unresolvable ref (unsupported extension, absolute path, ...):
+			// fall back to the old best-effort behavior rather than
+			// dropping the src entirely.
+			return fileMountBase + "/file/" + filepath.ToSlash(strings.TrimPrefix(src, "@/"))
 		}
-		return fileMountBase + "/file/" + filepath.ToSlash(src)
+		rel, err := filepath.Rel(collectionRoot, resolved.AbsPath)
+		if err != nil {
+			return fileMountBase + "/file/" + filepath.ToSlash(strings.TrimPrefix(src, "@/"))
+		}
+		return fileMountBase + "/file/" + filepath.ToSlash(rel)
 	}
 
 	result := imgSrcRe.ReplaceAllStringFunc(rawHTML, func(match string) string {

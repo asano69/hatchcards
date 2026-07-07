@@ -1,8 +1,0 @@
-[
-  {
-    "deckName": "Art",
-    "kind": "basic",
-    "question": "What is the title of this painting?\n\n![](@/thetempest.webp)",
-    "answer": "_The Tempest_"
-  }
-]

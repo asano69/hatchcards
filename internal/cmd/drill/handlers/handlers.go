@@ -144,7 +144,7 @@ func (m *Manager) AddSession(
 	h := &handler{
 		mu:             &sync.Mutex{},
 		sess:           state.New(due, r, fsrsCfg),
-		cache:          drillcache.Build(due, fileMountBase),
+		cache:          drillcache.Build(due, col.Root, fileMountBase),
 		db:             database,
 		col:            col,
 		macros:         loadMacros(filepath.Join(col.Root, "macros.tex")),
@@ -367,7 +367,7 @@ func (h *handler) resetSession() {
 	}
 	h.sess = state.New(due, r, h.fsrsCfg)
 
-	h.cache = drillcache.Build(due, fileMountBase)
+	h.cache = drillcache.Build(due, col.Root, fileMountBase)
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
 

@@ -45,13 +45,14 @@ func Run(root string, out io.Writer) (Result, error) {
 
 		// Render both faces; errors here indicate broken Markdown.
 		// Use "/file" as a neutral fileMountBase for validation purposes.
-		if _, err := markdown.HTMLFront(card, deckFilePath, "/file"); err != nil {
+
+		if _, err := markdown.HTMLFront(card, deckFilePath, root, "/file"); err != nil {
 			errors = append(errors, fmt.Sprintf(
 				"%s:%d: error rendering front: %v",
 				deckFilePath, card.LineStart(), err,
 			))
 		}
-		if _, err := markdown.HTMLBack(card, deckFilePath, "/file"); err != nil {
+		if _, err := markdown.HTMLBack(card, deckFilePath, root, "/file"); err != nil {
 			errors = append(errors, fmt.Sprintf(
 				"%s:%d: error rendering back: %v",
 				deckFilePath, card.LineStart(), err,

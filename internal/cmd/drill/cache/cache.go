@@ -43,8 +43,11 @@ type cacheResult struct {
 // out across a small worker pool instead of running strictly sequentially.
 // This mainly matters for large due lists, where session start/reset used
 // to block on rendering every card one at a time.
-// fileMountBase is the URL prefix for the /file/ handler (e.g. "/drill/geo").
-func Build(due []collection.DueCard, fileMountBase string) *Cache {
+// collectionRoot is the absolute path of the collection root, used to
+// resolve media references to the URL the drill server actually serves them
+// from (see markdown.HTMLFront/HTMLBack). fileMountBase is the URL prefix
+// for the /file/ handler (e.g. "/drill/geo").
+func Build(due []collection.DueCard, collectionRoot, fileMountBase string) *Cache {
 	c := &Cache{entries: make(map[types.CardHash]Entry, len(due))}
 	if len(due) == 0 {
 		return c
@@ -64,7 +67,7 @@ func Build(due []collection.DueCard, fileMountBase string) *Cache {
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				if entry, ok := renderEntry(j.card.Card, fileMountBase); ok {
+				if entry, ok := renderEntry(j.card.Card, collectionRoot, fileMountBase); ok {
 					results <- cacheResult{hash: j.card.Card.Hash(), entry: entry}
 				}
 			}
@@ -99,14 +102,14 @@ func Build(due []collection.DueCard, fileMountBase string) *Cache {
 // renderEntry renders both faces of a single card into an Entry. It returns
 // ok=false if either face fails to render, matching Build's previous
 // behaviour of skipping cards with rendering errors.
-func renderEntry(card types.Card, fileMountBase string) (Entry, bool) {
+func renderEntry(card types.Card, collectionRoot, fileMountBase string) (Entry, bool) {
 	deckFilePath := card.FilePath()
 
-	frontContent, err := markdown.HTMLFront(card, deckFilePath, fileMountBase)
+	frontContent, err := markdown.HTMLFront(card, deckFilePath, collectionRoot, fileMountBase)
 	if err != nil {
 		return Entry{}, false
 	}
-	backContent, err := markdown.HTMLBack(card, deckFilePath, fileMountBase)
+	backContent, err := markdown.HTMLBack(card, deckFilePath, collectionRoot, fileMountBase)
 	if err != nil {
 		return Entry{}, false
 	}
