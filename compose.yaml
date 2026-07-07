@@ -1,16 +1,17 @@
 services:
   hashcards:
-    # build: .
-    image: ghcr.io/asano69/hashcards:0.1.0-beta.3
+    image: ghcr.io/asano69/hashcards:latest
+    container_name: hashcards
     restart: unless-stopped
     ports:
       - "3000:3000"
-    volumes:
-      - ./cards:/hashcards/cards
-      - ./data:/hashcards/pb_data
-      #- /run/secrets:/secrets
     env_file:
       - hashcards.env
+    volumes:
+      - ./data:/hashcards/pb_data
+      - ./cards:/hashcards/cards # optional
+      - ./hooks:/hashcards/hooks # optional
+      #- /root/nixos/modules/ca/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
       - TZ=Europe/London
       #
@@ -22,8 +23,21 @@ services:
       - FSRS_TARGET_RECALL=0.9
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
+      #
+      - HASHCARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
       # Not implemented yet
       #- DRILL_CARD_LIMIT=0 # max cards per session, 0 = no limit
       #- DRILL_NEW_CARD_LIMIT=0 # max new cards per session, 0 = no limit
       #- DRILL_ANSWER_CONTROLS=full # "full" (Forgot/Hard/Good/Easy) or "binary" (Forgot/Good)
       #- DRILL_BURY_SIBLINGS=true # bury sibling cloze cards within a session
+
+    #networks:
+    #  - traefik_net
+    #labels:
+    #  - traefik.enable=true
+    #  - traefik.http.routers.hashcards.rule=Host(`hashcards.app.internal`)
+#volumes:
+#  data:
+#networks:
+#  traefik_net:
+#    external: true
