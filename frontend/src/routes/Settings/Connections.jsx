@@ -8,20 +8,19 @@ async function fetchConnections() {
   return pb.collection("connections").getFullList({ sort: "name" });
 }
 
-// The hook picker only ever offers names the server resolves against its
-// hooks directory (see GET /api/hooks), so this stays a plain <select>
-// instead of a free-text field.
 async function fetchHooks() {
   const res = await pb.send("/api/hooks", { method: "GET" });
   return res.hooks ?? [];
 }
 
-// Connections section of the Settings page: manage git mirror connections.
 export default function Connections() {
   const [connections, { refetch }] = createResource(fetchConnections);
   const [hooks] = createResource(fetchHooks);
   const [form, setForm] = createSignal(emptyForm);
   const [error, setError] = createSignal("");
+  // Tracks which connection's mirror sync (including its post-sync hook,
+  // if any) is currently in flight, so only that row shows a spinner.
+  const [syncingId, setSyncingId] = createSignal(null);
 
   const startCreate = () => { setForm(emptyForm); setError(""); };
   const startEdit = (c) =>
@@ -59,6 +58,19 @@ export default function Connections() {
     await refetch();
   };
 
+  // Runs the mirror sync for one connection. The server-side call blocks
+  // until the git sync AND any configured post-sync hook have finished, so
+  // the spinner naturally stays up for the whole thing.
+  const sync = async (id) => {
+    setSyncingId(id);
+    try {
+      await pb.send(`/api/connections/${id}/mirror`, { method: "POST" });
+      await refetch();
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   return (
     <div class="flex flex-col gap-6">
       <h2 class="font-serif text-3xl">Mirror Connections</h2>
@@ -78,15 +90,28 @@ export default function Connections() {
                   <div class="text-sm text-[#dc3545]">{c.last_error}</div>
                 </Show>
               </div>
-              <div class="flex gap-2">
-                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" }); await refetch(); }} />
-                <Button value="Edit" onClick={() => startEdit(c)} />
-                <Button variant="danger" value="Delete" onClick={() => remove(c.id)} />
+              <div class="flex items-center gap-2">
+                <Show when={syncingId() === c.id}>
+                  <span
+                    class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border-soft)] border-t-transparent"
+                    aria-label="Syncing"
+                  />
+                </Show>
+                <Button
+                  value={syncingId() === c.id ? "Syncing…" : "Sync"}
+                  disabled={syncingId() !== null}
+                  onClick={() => sync(c.id)}
+                />
+                <Button value="Edit" onClick={() => startEdit(c)} disabled={syncingId() !== null} />
+                <Button variant="danger" value="Delete" onClick={() => remove(c.id)} disabled={syncingId() !== null} />
               </div>
             </li>
           )}
         </For>
       </ul>
+
+
+
 
       <form onSubmit={save} class="flex flex-col gap-3 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] p-6">
         <h3 class="text-xl">{form().id ? "Edit Connection" : "New Connection"}</h3>

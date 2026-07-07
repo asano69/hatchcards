@@ -369,7 +369,7 @@ func (h *handler) resetSession() {
 	h.sessionSaved = false
 	h.endedAt = time.Time{}
 
-	logrus.WithField("cards_due", len(due)).Warn("session reset")
+	logrus.WithField("cards_due", len(due)).Info("session reset")
 }
 
 func actionToGrade(action string) fsrs.Grade {
