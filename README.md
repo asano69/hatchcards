@@ -14,14 +14,13 @@ Features:
 
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
-- **Simple**: A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 - **Git mirroring**: Because hooks are fully programmable, flashcards can, in principle, be generated automatically from any repository. Repositories containing structured Q&A data can therefore be transformed into hashcrds decks.
 
-
-
+Context Preservation Principle:
+- A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 
 Tech Stack
 - Go
