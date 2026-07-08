@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // SupportedExtensions is the set of media file extensions the application accepts.

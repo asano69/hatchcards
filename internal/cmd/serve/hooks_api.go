@@ -6,7 +6,7 @@ package serve
 import (
 	"net/http"
 
-	"github.com/asano69/hatchcards/internal/hook"
+	"github.com/asano69/hatchards/internal/hook"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"

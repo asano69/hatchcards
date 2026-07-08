@@ -32,7 +32,7 @@ COPY internal/ ./internal/
 COPY migrations/ ./migrations/
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hatchcards ./cmd/hatchcards
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hatchards ./cmd/hatchards
 
 # ==========================================
 # Stage 2: Runtime
@@ -41,7 +41,7 @@ FROM alpine:3.23
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /usr/local/bin/
 
 
-WORKDIR /hatchcards
+WORKDIR /hatchards
 
 RUN apk add --no-cache \
     ca-certificates \
@@ -58,13 +58,13 @@ RUN apk add --no-cache \
     python3 \
     gawk
 
-RUN addgroup -g 1000 hatchcards && \
-    adduser -D -u 1000 -G hatchcards hatchcards
+RUN addgroup -g 1000 hatchards && \
+    adduser -D -u 1000 -G hatchards hatchards
 
-COPY --from=go-builder /build/hatchcards /usr/local/bin/hatchcards
+COPY --from=go-builder /build/hatchards /usr/local/bin/hatchards
 
-RUN mkdir -p /certs /hatchcards/data /hatchcards/cards /hatchcards/hooks
-RUN chown -R 1000:1000 /hatchcards
+RUN mkdir -p /certs /hatchards/data /hatchards/cards /hatchards/hooks
+RUN chown -R 1000:1000 /hatchards
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -72,4 +72,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 3000
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["hatchcards", "serve"]
+CMD ["hatchards", "serve"]

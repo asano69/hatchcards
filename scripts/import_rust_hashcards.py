@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Import a legacy (Rust-format) hashcards.db into a running PocketBase-backed
-hatchcards server via its REST API.
+hatchards server via its REST API.
 
 Usage:
     python3 import_rust_hashcards.py hashcards.db http://127.0.0.1:3000 admin@mail.internal password

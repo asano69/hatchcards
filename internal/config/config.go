@@ -1,4 +1,4 @@
-// Package config loads the configuration for hatchcards serve from
+// Package config loads the configuration for hatchards serve from
 // environment variables.
 package config
 
@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // ServerConfig holds HTTP server settings.

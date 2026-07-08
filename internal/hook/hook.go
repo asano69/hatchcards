@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // nameRe rejects anything but a bare identifier, so a name can never
@@ -97,8 +97,8 @@ func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) (string, 
 
 	cmd := exec.CommandContext(ctx, scriptPath, absSource, absOutput)
 	cmd.Env = append(os.Environ(),
-		"HATCHCARDS_SOURCE_DIR="+absSource,
-		"HATCHCARDS_OUTPUT_DIR="+absOutput,
+		"HATCHARDS_SOURCE_DIR="+absSource,
+		"HATCHARDS_OUTPUT_DIR="+absOutput,
 	)
 
 	out, err := cmd.CombinedOutput()

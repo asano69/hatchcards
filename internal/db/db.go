@@ -8,16 +8,16 @@ import (
 
 	"encoding/json"
 	"errors"
-	"github.com/asano69/hatchcards/internal/errs"
-	"github.com/asano69/hatchcards/internal/fsrs"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/errs"
+	"github.com/asano69/hatchards/internal/fsrs"
+	"github.com/asano69/hatchards/internal/types"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"os"
 	"strings"
 
-	_ "github.com/asano69/hatchcards/migrations"
+	_ "github.com/asano69/hatchards/migrations"
 )
 
 type ReviewRecord struct {
@@ -45,10 +45,10 @@ type Database struct{ app *pocketbase.PocketBase }
 // OpenScratch creates a Database backed by a fresh, disposable PocketBase
 // instance in its own temporary directory. Each call returns an
 // independent, empty database with no effect on any other Database.
-// PocketBase always needs a directory on disk, so this is hatchcards'
+// PocketBase always needs a directory on disk, so this is hatchards'
 // equivalent of SQLite's ":memory:" mode.
 func OpenScratch() (*Database, error) {
-	dir, err := os.MkdirTemp("", "hatchcards-pocketbase-*")
+	dir, err := os.MkdirTemp("", "hatchards-pocketbase-*")
 	if err != nil {
 		return nil, errs.Newf("create temporary PocketBase data directory: %v", err)
 	}
@@ -60,9 +60,9 @@ func OpenScratch() (*Database, error) {
 }
 
 // New wraps an already-bootstrapped PocketBase app and ensures the
-// hatchcards schema exists in it. app is expected to be the single instance
-// shared by the whole CLI (see cmd/hatchcards/main.go); its data directory is
-// controlled by PocketBase's standard "--dir" flag, not by hatchcards itself.
+// hatchards schema exists in it. app is expected to be the single instance
+// shared by the whole CLI (see cmd/hatchards/main.go); its data directory is
+// controlled by PocketBase's standard "--dir" flag, not by hatchards itself.
 func New(app *pocketbase.PocketBase) (*Database, error) {
 	return newDatabase(app)
 }

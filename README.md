@@ -1,6 +1,6 @@
-# hatchcards
+# hatchards
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hatchcards)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hatchards)
 
 ## Introduction 🐝
 
@@ -44,7 +44,7 @@ This application is programmable and automates flashcard generation from Q&A lis
 
 ## Example
 
-The following JSON file is a valid hatchcards deck:
+The following JSON file is a valid hatchards deck:
 
 ```json
 [
@@ -111,7 +111,7 @@ The name of the JSON file can be anything you like, but it is generally easier t
 Start drilling:
 
 ```bash
-$ hatchcards serve
+$ hatchards serve
 ```
 
 This opens a web interface at `http://localhost:3000` where you can review your
@@ -133,14 +133,14 @@ been graded "Good" or higher. You can end the session prematurely by clicking
 
 ## Commands
 
-This section documents the hatchcards command line interface.
+This section documents the hatchards command line interface.
 
 ### `serve`
 
 Start a drilling session.
 
 ```bash
-$ hatchcards serve --dir [DIRECTORY]
+$ hatchards serve --dir [DIRECTORY]
 ```
 
 >[!NOTE]
@@ -153,7 +153,7 @@ $ hatchcards serve --dir [DIRECTORY]
 Print collection statistics to standard output.
 
 ```bash
-$ hatchcards stats [DIRECTORY]
+$ hatchards stats [DIRECTORY]
 ```
 
 ### `check`
@@ -161,7 +161,7 @@ $ hatchcards stats [DIRECTORY]
 Check the integrity of a collection.
 
 ```bash
-$ hatchcards check [DIRECTORY]
+$ hatchards check [DIRECTORY]
 ```
 
 ### `orphans`
@@ -170,28 +170,28 @@ Manage orphan cards (cards that exist in the database, but not in the
 collection, i.e., cards that were deleted from the collection).
 
 ```bash
-$ hatchcards orphans list [DIRECTORY]
-$ hatchcards orphans delete [DIRECTORY]
+$ hatchards orphans list [DIRECTORY]
+$ hatchards orphans delete [DIRECTORY]
 ```
 
 Example:
 
 ```
-$ hatchcards orphans list Cards
+$ hatchards orphans list Cards
 04effc035b71692b66a90a622559479516526e7720c41afa22b29562915d58af
 059e4e0fd5c3d0ab7ef0cc902cdc402a555ec4152b842fe584109de6c8082ce3
 061b8c27e0f437d0c6ae735e829b39cc3bf0ad8218cb16387dcb4271c20b244d
-$ hatchcards orphans delete Cards
+$ hatchards orphans delete Cards
 04effc035b71692b66a90a622559479516526e7720c41afa22b29562915d58af
 059e4e0fd5c3d0ab7ef0cc902cdc402a555ec4152b842fe584109de6c8082ce3
 061b8c27e0f437d0c6ae735e829b39cc3bf0ad8218cb16387dcb4271c20b244d
-$ hatchcards orphans list Cards
+$ hatchards orphans list Cards
 # no output
 ```
 
 ## Environment Variables
 
-`hatchcards serve` reads its configuration from environment variables. All are optional; defaults are shown below.
+`hatchards serve` reads its configuration from environment variables. All are optional; defaults are shown below.
 
 | Variable              | Default   | Description                                                                 |
 |------------------------|-----------|------------------------------------------------------------------------------|
@@ -217,7 +217,7 @@ These can be set directly, via `.envrc`/`direnv`, or (as in `hashacrds.env` and 
 
 ## Database
 
-hatchcards stores card performance data and review history in the SQLite3 database managed by PocketBase.
+hatchards stores card performance data and review history in the SQLite3 database managed by PocketBase.
 
 The `cards` table has the following schema:
 

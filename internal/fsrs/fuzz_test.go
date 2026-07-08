@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 func floatPtr(f float64) *float64 { return &f }

@@ -92,7 +92,7 @@ func TestResolveValidHook(t *testing.T) {
 func TestRunWritesOutput(t *testing.T) {
 	dir := t.TempDir()
 	script := writeExecutable(t, dir, "gen", `#!/bin/sh
-echo '[]' > "$HATCHCARDS_OUTPUT_DIR/deck.json"
+echo '[]' > "$HATCHARDS_OUTPUT_DIR/deck.json"
 `)
 	sourceDir := t.TempDir()
 	outputDir := filepath.Join(t.TempDir(), "generated")
@@ -106,7 +106,7 @@ echo '[]' > "$HATCHCARDS_OUTPUT_DIR/deck.json"
 }
 
 // TestRunPassesDirsAsArguments verifies that $1/$2 receive the same
-// directories as the HATCHCARDS_SOURCE_DIR / HATCHCARDS_OUTPUT_DIR
+// directories as the HATCHARDS_SOURCE_DIR / HATCHARDS_OUTPUT_DIR
 // environment variables, so scripts that expect positional arguments
 // (e.g. "script.py <input_dir> <output_dir>") work without a wrapper.
 func TestRunPassesDirsAsArguments(t *testing.T) {

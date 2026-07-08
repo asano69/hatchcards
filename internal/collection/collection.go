@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/asano69/hatchcards/internal/db"
-	"github.com/asano69/hatchcards/internal/errs"
-	"github.com/asano69/hatchcards/internal/parser"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/db"
+	"github.com/asano69/hatchards/internal/errs"
+	"github.com/asano69/hatchards/internal/parser"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // DueCard pairs a card with its current performance record.

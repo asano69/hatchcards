@@ -6,11 +6,11 @@ package serve
 
 import (
 	"context"
-	"github.com/asano69/hatchcards/internal/cryptoutil"
-	"github.com/asano69/hatchcards/internal/db"
-	"github.com/asano69/hatchcards/internal/errs"
-	"github.com/asano69/hatchcards/internal/hook"
-	"github.com/asano69/hatchcards/internal/mirror"
+	"github.com/asano69/hatchards/internal/cryptoutil"
+	"github.com/asano69/hatchards/internal/db"
+	"github.com/asano69/hatchards/internal/errs"
+	"github.com/asano69/hatchards/internal/hook"
+	"github.com/asano69/hatchards/internal/mirror"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
@@ -166,7 +166,7 @@ func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sour
 	return nil
 }
 
-// removeConnectionData deletes every directory hatchcards may have written
+// removeConnectionData deletes every directory hatchards may have written
 // for a connection's sanitized name: the deck directory (dataRoot/<name>)
 // and, if a hook was ever configured, its git working tree
 // (dataRoot/.mirror/<name>). It runs whenever a connection is disabled, so

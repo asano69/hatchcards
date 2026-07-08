@@ -1,4 +1,4 @@
-module github.com/asano69/hatchcards
+module github.com/asano69/hatchards
 
 go 1.26.1
 

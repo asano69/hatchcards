@@ -3,7 +3,7 @@ import { A } from "@solidjs/router";
 import pb from "../lib/pb";
 
 // Shared top navigation bar shown on Home, Stats, and Admin.
-// The "Hatchcards" title itself links back to Home, so only Stats and
+// The "Hatchards" title itself links back to Home, so only Stats and
 // Admin need explicit links here.
 //
 // Refresh re-scans the deck directory on the server (POST /api/rescan),
@@ -29,7 +29,7 @@ export default function NavBar(props) {
   return (
 
 <div class="mb-10 flex w-full flex-wrap items-center justify-between gap-y-3">
-      <A href="/" class="font-serif text-4xl flex items-center gap-2 transition-opacity hover:opacity-80"><img src="/favicon.svg" alt="" class="h-12 w-12" /><h1>Hatchcards</h1></A>
+      <A href="/" class="font-serif text-4xl flex items-center gap-2 transition-opacity hover:opacity-80"><img src="/favicon.svg" alt="" class="h-12 w-12" /><h1>Hatchards</h1></A>
       <nav class="flex flex-wrap items-center gap-3">
         <button type="button" class="btn" disabled={refreshing()} onClick={handleRefresh}>
           {refreshing() ? "Refreshing…" : "Refresh"}

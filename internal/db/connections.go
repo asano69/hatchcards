@@ -4,12 +4,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/asano69/hatchcards/internal/cryptoutil"
-	"github.com/asano69/hatchcards/internal/errs"
-	"github.com/asano69/hatchcards/internal/hook"
+	"github.com/asano69/hatchards/internal/cryptoutil"
+	"github.com/asano69/hatchards/internal/errs"
+	"github.com/asano69/hatchards/internal/hook"
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // unsafePathCharsRe matches characters that are unsafe to use verbatim in a

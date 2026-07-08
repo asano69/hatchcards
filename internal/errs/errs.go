@@ -1,4 +1,4 @@
-// Package errs provides the standard error type for hatchcards.
+// Package errs provides the standard error type for hatchards.
 package errs
 
 import "fmt"

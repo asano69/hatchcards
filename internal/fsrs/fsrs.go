@@ -7,8 +7,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/asano69/hatchcards/internal/errs"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/errs"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // W contains the 19 FSRS model weights.

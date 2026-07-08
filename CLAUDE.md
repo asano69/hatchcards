@@ -1,6 +1,6 @@
 ## Overview
 
-hatchcards is a plain-text spaced repetition system written in Go. It parses JSON files containing flashcards, stores performance data in PocketBase, and presents cards through a web interface using the FSRS algorithm for scheduling.
+hatchards is a plain-text spaced repetition system written in Go. It parses JSON files containing flashcards, stores performance data in PocketBase, and presents cards through a web interface using the FSRS algorithm for scheduling.
 
 
 # Design and Internals

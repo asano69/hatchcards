@@ -3,7 +3,7 @@ package media
 import (
 	"os"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 const (

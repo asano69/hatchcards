@@ -10,7 +10,7 @@ import (
 	transporthttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sirupsen/logrus"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // Connection は変更なし

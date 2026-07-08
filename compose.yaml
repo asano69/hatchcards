@@ -1,21 +1,21 @@
 services:
-  hatchcards:
-    image: ghcr.io/asano69/hatchcards:latest
-    container_name: hatchcards
+  hatchards:
+    image: ghcr.io/asano69/hatchards:latest
+    container_name: hatchards
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
-      - hatchcards.env
+      - hatchards.env
     volumes:
-      - ./data:/hatchcards/pb_data
-      - ./cards:/hatchcards/cards
-      - ./hooks:/hatchcards/hooks # optional
+      - ./data:/hatchards/pb_data
+      - ./cards:/hatchards/cards
+      - ./hooks:/hatchards/hooks # optional
       #- /etc/ssl/certs/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
       - TZ=Europe/London
       #
-      - HATCHCARDS_MASTER_KEY=${HATCHCARDS_MASTER_KEY}
+      - HATCHARDS_MASTER_KEY=${HATCHARDS_MASTER_KEY}
       #
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
@@ -24,7 +24,7 @@ services:
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
       #
-      - HATCHCARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
+      - HATCHARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
       # Not implemented yet
       #- DRILL_CARD_LIMIT=0 # max cards per session, 0 = no limit
       #- DRILL_NEW_CARD_LIMIT=0 # max new cards per session, 0 = no limit
@@ -35,7 +35,7 @@ services:
     #  - traefik_net
     #labels:
     #  - traefik.enable=true
-    #  - traefik.http.routers.hatchcards.rule=Host(`hatchcards.app.internal`)
+    #  - traefik.http.routers.hatchards.rule=Host(`hatchards.app.internal`)
 #volumes:
 #  data:
 #  cards:

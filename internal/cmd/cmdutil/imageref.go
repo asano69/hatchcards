@@ -4,7 +4,7 @@ package cmdutil
 import (
 	"strings"
 
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // CardImageRefs returns every Markdown image src value ("![](...)")

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // writeDeck creates a temporary .json file with the given deck name stem and

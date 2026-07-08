@@ -34,7 +34,7 @@ local_path (作業ツリー。Markdownソースが入っている)
      │ hookが設定されていれば実行
      ▼
 hook script (運用者が事前配置した実行ファイル1本、read-onlyディレクトリ内)
-     │ $HATCHCARDS_SOURCE_DIR を読み、$HATCHCARDS_OUTPUT_DIR にJSONを書く
+     │ $HATCHARDS_SOURCE_DIR を読み、$HATCHARDS_OUTPUT_DIR にJSONを書く
      ▼
 DATA_ROOT/.generated/<local_path>/*.json
      │ walkDecks が再帰的に拾う（collection.go、無変更）
@@ -76,7 +76,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // nameRe rejects anything but a bare identifier, so a name can never
@@ -141,8 +141,8 @@ func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) error {
 	cmd := exec.CommandContext(ctx, scriptPath)
 	cmd.Dir = sourceDir
 	cmd.Env = append(os.Environ(),
-		"HATCHCARDS_SOURCE_DIR="+sourceDir,
-		"HATCHCARDS_OUTPUT_DIR="+outputDir,
+		"HATCHARDS_SOURCE_DIR="+sourceDir,
+		"HATCHARDS_OUTPUT_DIR="+outputDir,
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -214,7 +214,7 @@ hooks/                 <- ホスト側で用意、read-onlyでマウント
   question_to_json     <- 実行可能ファイル（言語不問）
 ```
 
-`compose.yaml` に `./hooks:/hatchcards/hooks:ro` を追加。既存の
+`compose.yaml` に `./hooks:/hatchards/hooks:ro` を追加。既存の
 `scripts/question_to_json.py` のような「input_dir, output_dirを取る」契約の
 スクリプトはそのまま流用できる（環境変数経由で渡す点だけ合わせる）。
 

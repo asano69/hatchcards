@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // LoadResult holds the raw bytes and derived metadata of a loaded media file.

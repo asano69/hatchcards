@@ -3,8 +3,8 @@ package db
 import (
 	"testing"
 
-	"github.com/asano69/hatchcards/internal/fsrs"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/fsrs"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // openMemory opens an in-memory database for testing.

@@ -9,8 +9,8 @@ import (
 	"encoding/hex"
 	"math"
 
-	"github.com/asano69/hatchcards/internal/rng"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/rng"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // fuzzRange describes a range of interval lengths (in days) and the

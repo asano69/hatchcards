@@ -9,11 +9,11 @@ import (
 	pbcmd "github.com/pocketbase/pocketbase/cmd"
 	"github.com/spf13/cobra"
 
-	"github.com/asano69/hatchcards/internal/cmd/check"
-	"github.com/asano69/hatchcards/internal/cmd/orphans"
-	"github.com/asano69/hatchcards/internal/cmd/serve"
-	"github.com/asano69/hatchcards/internal/cmd/stats"
-	"github.com/asano69/hatchcards/internal/config"
+	"github.com/asano69/hatchards/internal/cmd/check"
+	"github.com/asano69/hatchards/internal/cmd/orphans"
+	"github.com/asano69/hatchards/internal/cmd/serve"
+	"github.com/asano69/hatchards/internal/cmd/stats"
+	"github.com/asano69/hatchards/internal/config"
 
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
@@ -21,7 +21,7 @@ import (
 func main() {
 	app := pocketbase.NewWithConfig(pocketbase.Config{HideStartBanner: true})
 
-	// Registers "hatchcards migrate up/down/create/collections/history-sync"
+	// Registers "hatchards migrate up/down/create/collections/history-sync"
 	// for manual or CI-driven schema management. Automigrate is off because
 	// the schema is defined purely in Go migration files (internal/migrations),
 	// not edited through the PocketBase dashboard.
@@ -30,7 +30,7 @@ func main() {
 	})
 
 	root := app.RootCmd
-	root.Use = "hatchcards"
+	root.Use = "hatchards"
 	root.Short = "A spaced-repetition flashcard tool"
 	root.SilenceUsage = true
 	root.Version = "0.1.0-beta.13"

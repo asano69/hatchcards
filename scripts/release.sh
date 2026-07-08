@@ -6,7 +6,7 @@ set -euo pipefail
 # settings
 ########################################
 
-VERSION_FILE="cmd/hatchcards/main.go"
+VERSION_FILE="cmd/hatchards/main.go"
 REMOTE="origin"
 BRANCH="main"
 COMMIT_PREFIX="release:"

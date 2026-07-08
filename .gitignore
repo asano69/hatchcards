@@ -1,6 +1,6 @@
 *.db
 /hashcards
-/hatchcards
+/hatchards
 /target
 /result
 /data/

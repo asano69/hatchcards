@@ -6,7 +6,7 @@
 package serve
 
 import (
-	"github.com/asano69/hatchcards/internal/db"
+	"github.com/asano69/hatchards/internal/db"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"

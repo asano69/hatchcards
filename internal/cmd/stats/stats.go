@@ -6,9 +6,9 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 
-	"github.com/asano69/hatchcards/internal/collection"
-	"github.com/asano69/hatchcards/internal/db"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/collection"
+	"github.com/asano69/hatchards/internal/db"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 func Run(app *pocketbase.PocketBase, root string, out io.Writer) error {

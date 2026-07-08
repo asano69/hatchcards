@@ -25,8 +25,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 
-	"github.com/asano69/hatchcards/internal/media"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/media"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // renderer is a configured goldmark instance shared across all calls.
@@ -61,7 +61,7 @@ var inlineMathRe = regexp.MustCompile(`\$([^$\n]+?)\$`)
 // then replaced with the actual HTML span after rendering. This matches the
 // Rust implementation's approach and ensures the placeholder is treated as
 // plain text by the markdown renderer (e.g. inside backtick code spans).
-const clozePlaceholder = "XHATCHCARDSCLOZEX"
+const clozePlaceholder = "XHATCHARDSCLOZEX"
 
 // HTMLFront returns the HTML for the front face of a card.
 // deckFilePath is the absolute path of the deck file the card came from.

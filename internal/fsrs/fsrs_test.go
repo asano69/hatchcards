@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // approxEq reports whether a and b differ by less than 0.01,

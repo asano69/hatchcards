@@ -11,11 +11,11 @@ import (
 	"errors"
 	"os"
 
-	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchards/internal/errs"
 )
 
 // masterKeyEnv holds the base64-encoded 32-byte AES-256 master key.
-const masterKeyEnv = "HATCHCARDS_MASTER_KEY"
+const masterKeyEnv = "HATCHARDS_MASTER_KEY"
 
 // loadMasterKey reads and decodes the master key on every call, rather than
 // caching it, so it never lingers in a package-level variable longer than

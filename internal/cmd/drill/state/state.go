@@ -7,11 +7,11 @@
 package state
 
 import (
-	"github.com/asano69/hatchcards/internal/collection"
-	"github.com/asano69/hatchcards/internal/db"
-	"github.com/asano69/hatchcards/internal/fsrs"
-	"github.com/asano69/hatchcards/internal/rng"
-	"github.com/asano69/hatchcards/internal/types"
+	"github.com/asano69/hatchards/internal/collection"
+	"github.com/asano69/hatchards/internal/db"
+	"github.com/asano69/hatchards/internal/fsrs"
+	"github.com/asano69/hatchards/internal/rng"
+	"github.com/asano69/hatchards/internal/types"
 )
 
 // CompletedReview records the outcome of reviewing one card.
