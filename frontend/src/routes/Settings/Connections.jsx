@@ -102,44 +102,45 @@ export default function Connections() {
       <ul class="flex flex-col gap-3">
         <For each={connections()}>
           {(c) => (
-            <li class="flex items-center justify-between rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] px-4 py-3">
-              <div>
-                <div class="font-semibold">{c.name}</div>
-                <div class="text-sm text-[var(--color-border-soft)]">{c.remote_url}</div>
+            <li class="flex flex-wrap items-center justify-between gap-y-2 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-field)] px-4 py-3">
+  <div>
+    <div class="font-semibold">{c.name}</div>
+    <div class="text-sm text-[var(--color-border-soft)]">{c.remote_url}</div>
 
-                <Show when={c.hook_name}>
-                  <div class="text-sm text-[var(--color-border-soft)]">hook: {c.hook_name}</div>
-                </Show>
+    <Show when={c.hook_name}>
+      <div class="text-sm text-[var(--color-border-soft)]">hook: {c.hook_name}</div>
+    </Show>
 
-                {/* Always-visible last sync time. */}
-                <div class="text-sm text-[var(--color-border-soft)]">
-                  Last synced: {formatLastSynced(c.last_synced_at)}
-                </div>
+    {/* Always-visible last sync time. */}
+    <div class="text-sm text-[var(--color-border-soft)]">
+      Last synced: {formatLastSynced(c.last_synced_at)}
+    </div>
 
-                <Show when={c.last_error}>
-                  <div class="text-sm text-[#dc3545]">{c.last_error}</div>
-                </Show>
-              </div>
-              <div class="flex items-center gap-2">
-                <Show when={syncingId() === c.id}>
-                  <span
-                    class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border-soft)] border-t-transparent"
-                    aria-label="Syncing"
-                  />
-                </Show>
-                {/* Brief checkmark confirming the sync just succeeded. */}
-                <Show when={syncedId() === c.id}>
-                  <span class="text-lg text-[#28a745]" aria-label="Synced">✓</span>
-                </Show>
-                <Button
-                  value={syncingId() === c.id ? "Syncing…" : "Sync"}
-                  disabled={syncingId() !== null}
-                  onClick={() => sync(c.id)}
-                />
-                <Button value="Edit" onClick={() => startEdit(c)} disabled={syncingId() !== null} />
-                <Button variant="danger" value="Delete" onClick={() => remove(c.id)} disabled={syncingId() !== null} />
-              </div>
-            </li>
+    <Show when={c.last_error}>
+      <div class="text-sm text-[#dc3545]">{c.last_error}</div>
+    </Show>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <Show when={syncingId() === c.id}>
+      <span
+        class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border-soft)] border-t-transparent"
+        aria-label="Syncing"
+      />
+    </Show>
+    {/* Brief checkmark confirming the sync just succeeded. */}
+    <Show when={syncedId() === c.id}>
+      <span class="text-lg text-[#28a745]" aria-label="Synced">✓</span>
+    </Show>
+    <Button
+      value={syncingId() === c.id ? "Syncing…" : "Sync"}
+      disabled={syncingId() !== null}
+      onClick={() => sync(c.id)}
+    />
+    <Button value="Edit" onClick={() => startEdit(c)} disabled={syncingId() !== null} />
+    <Button variant="danger" value="Delete" onClick={() => remove(c.id)} disabled={syncingId() !== null} />
+  </div>
+</li>
+              
           )}
         </For>
       </ul>
