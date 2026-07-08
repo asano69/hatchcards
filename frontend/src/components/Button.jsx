@@ -4,7 +4,7 @@
 
 // 1. ボタンの「骨格」（サイズ、マージン、フォント、アニメーション、無効化挙動などすべて維持）
 const baseLayout =
-  "my-1.5 cursor-pointer appearance-none rounded-md px-3 py-[7px] " +
+  "my-1.5 cursor-pointer appearance-none whitespace-nowrap rounded-md px-3 py-[7px] " +
   "font-sans text-base font-semibold " +
   "transition-colors transition-shadow duration-150 md:mx-3 md:my-0 " +
   "disabled:cursor-not-allowed disabled:opacity-40";
