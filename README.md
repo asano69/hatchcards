@@ -40,7 +40,7 @@ This application is programmable and automates flashcard generation from Q&A lis
 >[!WARNING]
 >This app is still under development.
 
-<img src=".github/assets/sample-01.png" width="300" /><img src=".github/assets/sample-02.png" width="300" />
+<img src=".github/assets/sample-01.png" width="300" /><img src=".github/assets/sample-02.png" width="300" /><img src=".github/assets/sample-03.png" width="300" />
 
 ## Example
 
