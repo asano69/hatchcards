@@ -14,8 +14,7 @@ services:
       #- /etc/ssl/certs/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
       - TZ=Europe/London
-      #
-      - HATCHARDS_MASTER_KEY=${HATCHARDS_MASTER_KEY}
+      - HATCHARDS_MASTER_KEY=${HATCHARDS_MASTER_KEY} # openssl rand -base64 32
       #
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
@@ -23,8 +22,7 @@ services:
       - FSRS_TARGET_RECALL=0.9
       - FSRS_MIN_INTERVAL=1.0
       - FSRS_MAX_INTERVAL=256.0
-      #
-      - HATCHARDS_MASTER_KEY=korR79hhBKw1tSfLGz2XmZaMstKdTreamQT5+VDlmBA=
+
       # Not implemented yet
       #- DRILL_CARD_LIMIT=0 # max cards per session, 0 = no limit
       #- DRILL_NEW_CARD_LIMIT=0 # max new cards per session, 0 = no limit
