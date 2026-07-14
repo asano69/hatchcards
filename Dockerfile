@@ -56,7 +56,8 @@ RUN apk add --no-cache \
     curl \
     rsync \
     python3 \
-    gawk
+    gawk \
+    sqlite
 
 RUN addgroup -g 1000 hatchards && \
     adduser -D -u 1000 -G hatchards hatchards
